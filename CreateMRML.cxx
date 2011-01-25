@@ -57,7 +57,7 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-h: Prints help" << std::endl ;
    std::cout << std::endl ;
    std::cout << "For each object added to the scene:" << std::endl ;
-   std::cout << "-f FileName (compulsory!)" << std::endl ;
+   std::cout << "-f FileName (compulsory!)[relative path fomr object file to scene file]" << std::endl ;
    std::cout << "-p ParentNodeName (default: no parent)" << std::endl ;
    std::cout << "-n NodeName (default: name of the file stripped from extension and directory)" << std::endl ;
    std::cout << std::endl ;
@@ -81,7 +81,12 @@ int ReadCommonSubArguments( std::string arg , std::string value , InputClass* pt
    {
       if( ptr->GetFileName().compare( "" ) )
       {
+        std::cerr << "Error: Multiple filenames for one object" << std::endl ;
          return 1 ;
+      }
+      if( value[ 0 ] == '/' || ( value.size() >= 3  && value[ 1 ] == ':'  && value[ 2 ] == '\\' ) )
+      {
+        std::cerr << "Error: Path to file has to be relative" << std::endl ;
       }
       ptr->SetFileName( value ) ;
       return -1 ;
@@ -90,6 +95,7 @@ int ReadCommonSubArguments( std::string arg , std::string value , InputClass* pt
    {
       if( ptr->GetParentName().compare( "" ) )
       {
+        std::cerr << "Error: Multiple parents for one object" << std::endl ;
          return 1 ;
       }
       ptr->SetParentName( value ) ;
@@ -99,6 +105,7 @@ int ReadCommonSubArguments( std::string arg , std::string value , InputClass* pt
    {
       if( ptr->GetNodeName().compare( "" ) )
       {
+        std::cerr << "Error: Multiple node names for one object" << std::endl ;
          return 1 ;
       }
       ptr->SetNodeName( value ) ;
@@ -124,7 +131,7 @@ int ReadModelSubArguments( int argc ,
 {
    ModelClass* ptr = new ModelClass ;
    int exit = 0 ;
-   while( pos < argc - 1 )
+   while( pos < argc - 2 )
    {
       pos++ ;
       exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , ptr ) ;
@@ -134,10 +141,12 @@ int ReadModelSubArguments( int argc ,
       }
       else if( exit < 0 )
       {
+        pos++ ;
          continue ;
       }
       else
       {
+        std::cerr << "Error: No attributes found for one object" << std::endl ;
          exit = 1 ;
          break ;
       }
@@ -163,7 +172,7 @@ int ReadTransformSubArguments( int argc ,
 {
    TransformClass* ptr = new TransformClass ;
    int exit = 0 ;
-   while( pos < argc - 1 )
+   while( pos < argc - 2 )
    {
       pos++ ;
       exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , ptr ) ;
@@ -173,10 +182,12 @@ int ReadTransformSubArguments( int argc ,
       }
       else if( exit < 0 )
       {
+        pos++ ;
          continue ;
       }
       else
       {
+        std::cerr << "Error: No attributes found for one object" << std::endl ;
          exit = 1 ;
          break ;
       }
@@ -190,7 +201,6 @@ int ReadTransformSubArguments( int argc ,
    {
       pos-- ;
    }
-   ptr->Print() ;
    arguments.push_back( ptr ) ;
    return 0 ;
 }
@@ -206,7 +216,7 @@ int ReadVolumeSubArguments( int argc ,
    bool color = false ;
    bool type = false ;
    int exit = 0 ;
-   while( pos < argc - 1 )
+   while( pos < argc - 2 )
    {
       pos++ ;
       exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , ptr ) ;
@@ -216,12 +226,14 @@ int ReadVolumeSubArguments( int argc ,
       }
       else if( exit < 0 )
       {
+        pos++ ;
          continue ;
       }
       if( !strcmp( argv[ pos ] , "-c" ) )
       {
          if( color )
          {
+           std::cerr << "Error: Multiple colors given for one object" << std::endl ;
             exit = 1 ;
             break ;
          }
@@ -245,11 +257,13 @@ int ReadVolumeSubArguments( int argc ,
          }
          ptr->SetColor( nb ) ;
          color = true ;
+         pos++ ;
       }
       else if( !strcmp( argv[ pos ] , "-y" ) )
       {
          if( type )
          {
+           std::cerr << "Error: Multiple types given for one object" << std::endl ;
             exit = 1 ;
             break ;
          }
@@ -260,9 +274,11 @@ int ReadVolumeSubArguments( int argc ,
             break ;
          }
          type = true ;
+         pos++ ;
       }
       else
       {
+        std::cerr << "Error: No attributes found for one object" << std::endl ;
          exit = 1 ;
          break ;
       }
@@ -300,10 +316,9 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
    }
    for( ; i < argc ; i++ )
    {
-      std::cout << i << " " << argv[ i ] << std::endl ;
       if( !strcmp( argv[ i ] , "-v" ) )
       {
-         if( ReadVolumeSubArguments( argc , argv ,i , arguments ) ) ;
+         if( ReadVolumeSubArguments( argc , argv ,i , arguments ) )
          {
             PrintHelp( argv[ 0 ] , 0 ) ;
             return 1 ;
@@ -311,7 +326,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       }
       else if( !strcmp( argv[ i ] , "-t" ) )
       {
-         if( ReadTransformSubArguments( argc , argv ,i , arguments ) ) ;
+         if( ReadTransformSubArguments( argc , argv ,i , arguments ) )
          {
             PrintHelp( argv[ 0 ] , 0 ) ;
             return 1 ;
@@ -319,7 +334,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       }
       else if( !strcmp( argv[ i ] , "-m" ) )
       {
-         if( ReadModelSubArguments( argc , argv ,i , arguments ) ) ;
+         if( ReadModelSubArguments( argc , argv ,i , arguments ) )
          {
             PrintHelp( argv[ 0 ] , 0 ) ;
             return 1 ;
@@ -334,14 +349,40 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       {
          PrintHelp( argv[ 0 ] , 0 ) ;
          return 1 ;
-      }
-         
+      }     
    }
    return 0 ;
 }
 
+
+int SetParentNode( vtkMRMLTransformableNode *child , const char* parentName , vtkMRMLScene* scene )
+{
+  if( !strcmp( parentName , "" ) )
+  {
+    return 0 ;
+  }
+  vtkMRMLNode* node = NULL ;
+  //     vtkMRMLNode* node = scene->GetNodeByID( input->GetParentName() ) ;
+  for( int i = 0 ; i < scene->GetNumberOfNodes() ; i++ )
+  {
+    vtkMRMLNode* tempnode = scene->GetNthNode( i) ;
+    if( !strcmp( tempnode->GetName() , parentName ) )
+    {
+      node = tempnode ;
+    }
+  }
+  if( !node )
+  {
+    std::cerr << "Parent node does not exist. Set parent before child" << std::endl ;
+    return 1 ;
+  }
+  child->SetAndObserveTransformNodeID( node->GetID() ) ;
+  return 0 ;
+}
+
 int AddTransform( InputClass *input , vtkMRMLScene* scene )
 {
+   int output = 0 ;
    vtkMRMLTransformStorageNode* snode = vtkMRMLTransformStorageNode::New() ;
    snode->SetFileName( input->GetFileName().c_str() ) ;
    std::string storageName = input->GetNodeName() + "Storage" ;
@@ -351,22 +392,17 @@ int AddTransform( InputClass *input , vtkMRMLScene* scene )
    vtkMRMLLinearTransformNode* lnode = vtkMRMLLinearTransformNode::New() ;
    lnode->SetName( input->GetNodeName().c_str() ) ;
    lnode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-   if( input->GetParentName().compare( "" ) )
+   if( SetParentNode( lnode ,  input->GetParentName().c_str() , scene ) )
    {
-     vtkMRMLNode* node = scene->GetNodeByID( input->GetParentName() ) ;
-     if( !node )
-     {
-        std::cerr << "Parent node does not exist. Set parent before child" << std::endl ;
-        return 1 ;
-     }
-     lnode->SetAndObserveTransformNodeID( node->GetID() ) ;
+     output = 1 ;
    }
-   scene->AddNode( lnode ) ;
-
+   if( !output )
+   {
+     scene->AddNode( lnode ) ;
+   }
    snode->Delete() ;
    lnode->Delete() ;
-
-   return 0 ;
+   return  output ;
 }
 
 
@@ -377,30 +413,36 @@ int AddModel( InputClass *input , vtkMRMLScene* scene )
 
 int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
 {
+   int output = 0 ;
    vtkMRMLVolumeArchetypeStorageNode* snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
    snode->SetFileName( volume->GetFileName().c_str() ) ;
    std::string storageName = volume->GetNodeName() + "Storage" ;
    snode->SetName( storageName.c_str() ) ;
    scene->AddNode( snode ) ;
-
-
-   vtkMRMLScalarVolumeDisplayNode *dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
-   dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
-   scene->AddNode( dnode ) ;
-
    if( !volume->GetVolumeType().compare( "scalar" ) )
    {
+      vtkMRMLScalarVolumeDisplayNode *dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
+      dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
+      scene->AddNode( dnode ) ;
       vtkMRMLScalarVolumeNode* inode = vtkMRMLScalarVolumeNode::New() ;
       inode->SetName( volume->GetNodeName().c_str() ) ;
       inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
       inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-      scene->AddNode( inode ) ;
+      if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
+      {
+        output = 1 ;
+      }
+      if( !output )
+      {
+        scene->AddNode( inode ) ;
+      }
       inode->Delete() ;
+      dnode->Delete() ;
    }
    
    snode->Delete() ;
-   dnode->Delete() ;
-   return 0 ;
+
+   return output ;
 }
 
 void CheckNodeName( std::vector< InputClass* > &arguments )
@@ -420,7 +462,7 @@ void CheckNodeName( std::vector< InputClass* > &arguments )
          pos = name.find_last_of( "." ) ;
          if( pos != std::string::npos )
          {
-            name = name.substr( 0 , pos - 1 ) ;
+            name = name.substr( 0 , pos ) ;
          }
          arguments[ i ]->SetNodeName( name ) ;
       }
@@ -430,16 +472,14 @@ void CheckNodeName( std::vector< InputClass* > &arguments )
 //Check that each node name is unique
 int CheckDoublons( std::vector< InputClass* > arguments )
 {
-   std::vector< std::string > names ;
-   for( unsigned int i = 0 ; i < arguments.size() ; i++ )
+   for( unsigned int i = 0 ; i < arguments.size() - 1 ; i++ )
    {
-      for( unsigned int j = 0 ; j < names.size() ; j++ )
+     for( unsigned int j = i + 1 ; j < arguments.size() ; j++ )
       {
-         if( !arguments[ i ]->GetNodeName().compare( names[ j ] ) )
+        if( !arguments[ i ]->GetNodeName().compare( arguments[ j ]->GetNodeName() ) )
          {
             return 1 ;
          }
-         names.push_back( arguments[ i ]->GetNodeName() ) ;
       }
    }
    return 0 ;
@@ -483,7 +523,7 @@ int main( int argc , const char* argv[] )
             std::cerr << "Problem dynamic casting VolumeClass: This should never happen!!!!" << std::endl ;
             return EXIT_FAILURE ;
          }
-         AddModel( arguments[ i ] , scene ) ;
+         AddVolume( volume , scene ) ;
       }
    }
 
