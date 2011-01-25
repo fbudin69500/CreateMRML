@@ -435,121 +435,66 @@ int AddModel( InputClass *input , vtkMRMLScene* scene )
 
 int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
 {
-   int output = 0 ;
+   int output = EXIT_SUCCESS ;
+   vtkMRMLStorageNode *snode ;
+   vtkMRMLScalarVolumeDisplayNode* dnode ;
+   vtkMRMLVolumeNode *inode ;
    if( !volume->GetVolumeType().compare( "scalar" ) )
    {
-     vtkMRMLVolumeArchetypeStorageNode* snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
-     snode->SetFileName( volume->GetFileName().c_str() ) ;
-     std::string storageName = volume->GetNodeName() + "Storage" ;
-     snode->SetName( storageName.c_str() ) ;
-     scene->AddNode( snode ) ;
-      vtkMRMLScalarVolumeDisplayNode *dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
-      dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
-      scene->AddNode( dnode ) ;
-      vtkMRMLScalarVolumeNode* inode = vtkMRMLScalarVolumeNode::New() ;
-      if( volume->IsLabelMap() )
-      {
-        inode->LabelMapOn() ;
-      }
-      inode->SetName( volume->GetNodeName().c_str() ) ;
-      inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-      inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-      if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
-      {
-        output = 1 ;
-      }
-      if( !output )
-      {
-        scene->AddNode( inode ) ;
-      }
-      inode->Delete() ;
-      dnode->Delete() ;
-      snode->Delete() ;
+     snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
+     dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
+     vtkMRMLScalarVolumeNode *vnode = vtkMRMLScalarVolumeNode::New() ;
+     if( volume->IsLabelMap() )
+     {
+       vnode->LabelMapOn() ;
+     }
+     inode = vnode ;
    }
    else if( !volume->GetVolumeType().compare( "DWI" ) )
    {
-     vtkMRMLNRRDStorageNode* snode = vtkMRMLNRRDStorageNode::New() ;
-     snode->SetFileName( volume->GetFileName().c_str() ) ;
-     std::string storageName = volume->GetNodeName() + "Storage" ;
-     snode->SetName( storageName.c_str() ) ;
-     scene->AddNode( snode ) ;
-     vtkMRMLDiffusionWeightedVolumeDisplayNode *dnode = vtkMRMLDiffusionWeightedVolumeDisplayNode::New() ;
-     dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
-     scene->AddNode( dnode ) ;
-     vtkMRMLDiffusionWeightedVolumeNode* inode = vtkMRMLDiffusionWeightedVolumeNode::New() ;
-     inode->SetName( volume->GetNodeName().c_str() ) ;
-     inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-     inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-     if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
-     {
-       output = 1 ;
-     }
-     if( !output )
-     {
-       scene->AddNode( inode ) ;
-     }
-     inode->Delete() ;
-     dnode->Delete() ;
-     snode->Delete() ;
+     snode = vtkMRMLNRRDStorageNode::New() ;
+     dnode = vtkMRMLDiffusionWeightedVolumeDisplayNode::New() ;
+     inode = vtkMRMLDiffusionWeightedVolumeNode::New() ;
    }
    else if( !volume->GetVolumeType().compare( "DTI" ) )
    {
-     vtkMRMLNRRDStorageNode* snode = vtkMRMLNRRDStorageNode::New() ;
-     snode->SetFileName( volume->GetFileName().c_str() ) ;
-     std::string storageName = volume->GetNodeName() + "Storage" ;
-     snode->SetName( storageName.c_str() ) ;
-     scene->AddNode( snode ) ;
-     vtkMRMLDiffusionTensorVolumeDisplayNode *dnode = vtkMRMLDiffusionTensorVolumeDisplayNode::New() ;
-     dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
-     scene->AddNode( dnode ) ;
-     vtkMRMLDiffusionTensorVolumeNode* inode = vtkMRMLDiffusionTensorVolumeNode::New() ;
-     inode->SetName( volume->GetNodeName().c_str() ) ;
-     if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
-     {
-       output = 1 ;
-     }
-     if( !output )
-     {
-       scene->AddNode( inode ) ;
-     }
-     inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-     inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-     inode->Delete() ;
-     dnode->Delete() ;
-     snode->Delete() ;
+     snode = vtkMRMLNRRDStorageNode::New() ;
+     dnode = vtkMRMLDiffusionTensorVolumeDisplayNode::New() ;
+     inode = vtkMRMLDiffusionTensorVolumeNode::New() ;
    }
    else if( !volume->GetVolumeType().compare( "vector" ) )
    {
-     vtkMRMLVolumeArchetypeStorageNode* snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
-     snode->SetFileName( volume->GetFileName().c_str() ) ;
-     std::string storageName = volume->GetNodeName() + "Storage" ;
-     snode->SetName( storageName.c_str() ) ;
-     scene->AddNode( snode ) ;
-     vtkMRMLVectorVolumeDisplayNode *dnode = vtkMRMLVectorVolumeDisplayNode::New() ;
-     dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
-     dnode->SetVisualizationModeToScalarVolume();
-     scene->AddNode( dnode ) ;
-     vtkMRMLVectorVolumeNode* inode = vtkMRMLVectorVolumeNode::New() ;
-     inode->SetName( volume->GetNodeName().c_str() ) ;
-     if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
-     {
-       output = 1 ;
-     }
-     if( !output )
-     {
-       scene->AddNode( inode ) ;
-     }
-     inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-     inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-     inode->Delete() ;
-     dnode->Delete() ;
-     snode->Delete() ;
+     snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
+     dnode = vtkMRMLVectorVolumeDisplayNode::New() ;
+     inode = vtkMRMLVectorVolumeNode::New() ;
    }
    else
    {
      std::cerr << "Error: Volume type unknown" << std::endl ;
-     output = 1 ;
-  }
+     return EXIT_FAILURE ;
+   }
+   snode->SetFileName( volume->GetFileName().c_str() ) ;
+   std::string storageName = volume->GetNodeName() + "Storage" ;
+   snode->SetName( storageName.c_str() ) ;
+   scene->AddNode( snode ) ;
+   dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
+   scene->AddNode( dnode ) ;
+   
+   inode->SetName( volume->GetNodeName().c_str() ) ;
+   if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
+   {
+     output = EXIT_FAILURE ;
+   }
+   if( !output )
+   {
+     scene->AddNode( inode ) ;
+   }
+   inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
+   inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
+   inode->Delete() ;
+   dnode->Delete() ;
+   snode->Delete() ;
+
    return output ;
 }
 
@@ -595,6 +540,7 @@ int CheckDoublons( std::vector< InputClass* > arguments )
 
 int main( int argc , const char* argv[] )
 {
+  int output = EXIT_SUCCESS ;
    std::vector< InputClass* > arguments ;
    if( ReadArguments( argc , argv , arguments ) )
    {
@@ -617,11 +563,19 @@ int main( int argc , const char* argv[] )
    {
       if( !arguments[ i ]->GetType().compare( "Transform" ) )
       {
-         AddTransform( arguments[ i ] , scene ) ;
+        if( AddTransform( arguments[ i ] , scene ) )
+        {
+          output = EXIT_FAILURE ;
+         break ;           
+        }
       }
       if( !arguments[ i ]->GetType().compare( "Model" ) )
       {
-         AddModel( arguments[ i ] , scene ) ;
+         if( AddModel( arguments[ i ] , scene ) )
+         {
+           output = EXIT_FAILURE ;
+           break ;
+        }
       }
       if( !arguments[ i ]->GetType().compare( "Volume" ) )
       {
@@ -631,16 +585,22 @@ int main( int argc , const char* argv[] )
             std::cerr << "Problem dynamic casting VolumeClass: This should never happen!!!!" << std::endl ;
             return EXIT_FAILURE ;
          }
-         AddVolume( volume , scene ) ;
+         if( AddVolume( volume , scene ) )
+         {
+           output = EXIT_FAILURE ;
+           break ;
+        }
       }
    }
-
-scene->SetURL( sceneName.c_str() ) ;
-scene->Commit() ;
-scene->Delete() ;
+if( output == EXIT_SUCCESS )
+{
+  scene->SetURL( sceneName.c_str() ) ;
+  scene->Commit() ;
+  scene->Delete() ;
+}
  for( unsigned int i = 0 ; i < arguments.size() ; i++ )
  {
     delete arguments[ i ] ;
  }
- return EXIT_SUCCESS ;
+ return output ;
 }
