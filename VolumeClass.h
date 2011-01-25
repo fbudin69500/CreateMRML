@@ -88,6 +88,7 @@ class VolumeClass : public InputClass
          colorNode = vtkMRMLColorTableNode::New() ;
          colorNode->SetTypeToGrey() ;
          m_VolumeType = "scalar" ;
+         m_LabelMap = false ;
       }
       ~VolumeClass()
       {
@@ -98,6 +99,14 @@ class VolumeClass : public InputClass
          InputClass::Print() ;
          std::cout << "Image Type: " << m_VolumeType << std::endl ;
          std::cout << "Color: " << colorNode->GetTypeAsIDString() << std::endl ;
+      }
+      void LabelMap( bool label )
+      {
+        m_LabelMap = label ;
+      }
+      bool IsLabelMap()
+      {
+        return m_LabelMap ;
       }
       std::string GetType()
       {
@@ -190,6 +199,7 @@ class VolumeClass : public InputClass
    private:
       vtkMRMLColorTableNode *colorNode ;
       std::string m_VolumeType ;
+      bool m_LabelMap ;
 };
 
 #endif

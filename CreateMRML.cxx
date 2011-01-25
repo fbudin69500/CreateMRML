@@ -4,9 +4,13 @@
 #include <vtkMRMLScalarVolumeNode.h>
 #include <vtkMRMLVolumeArchetypeStorageNode.h>
 #include <vtkMRMLScalarVolumeDisplayNode.h>
-//#include <vtkMRMLVectorVolumeNode.h>
-//#include <vtkMRMLDiffusionTensorVolumeNode.h>
-//#include <vtkMRMLDiffusionWeightedVolumeNode.h>
+#include <vtkMRMLDiffusionWeightedVolumeDisplayNode.h>
+#include <vtkMRMLVectorVolumeNode.h>
+#include <vtkMRMLVectorVolumeDisplayNode.h>
+#include <vtkMRMLDiffusionTensorVolumeNode.h>
+#include <vtkMRMLDiffusionTensorVolumeDisplayNode.h>
+#include <vtkMRMLDiffusionWeightedVolumeNode.h>
+#include <vtkMRMLNRRDStorageNode.h>
 
 #include "ModelClass.h"
 #include "TransformClass.h"
@@ -65,6 +69,7 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << std::endl ;
    std::cout << "-c ColorCode (default: 1 [grey])" << std::endl ;
    std::cout << "-y VolumeType (default: scalar)" << std::endl ;
+   std::cout << "-l: Label map (only for scalar volumes)" << std::endl ;
    std::cout << std::endl ;
    std::cout << "Color Table:" << std::endl ;
    VolumeClass volume ;
@@ -213,12 +218,29 @@ int ReadVolumeSubArguments( int argc ,
                           )
 {
    VolumeClass* ptr = new VolumeClass ;
-   bool color = false ;
-   bool type = false ;
+   bool colorSet = false ;
+   bool typeSet = false ;
+   bool labelSet = false ;
    int exit = 0 ;
-   while( pos < argc - 2 )
+   while( pos < argc - 1 )
    {
       pos++ ;
+      if( !strcmp( argv[ pos ] , "-l" ) )
+      {
+        if( labelSet )
+        {
+          std::cerr << "Error: label flag given mutliple times for one object" << std::endl ;
+          exit = 1 ;
+          break ;
+        }
+        labelSet = true ;
+        ptr->LabelMap( true ) ;
+        continue ;
+      }
+      if( pos >= argc - 1 )
+      {
+        break ;
+      }
       exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , ptr ) ;
       if( exit > 0 )
       {
@@ -231,7 +253,7 @@ int ReadVolumeSubArguments( int argc ,
       }
       if( !strcmp( argv[ pos ] , "-c" ) )
       {
-         if( color )
+         if( colorSet )
          {
            std::cerr << "Error: Multiple colors given for one object" << std::endl ;
             exit = 1 ;
@@ -256,12 +278,12 @@ int ReadVolumeSubArguments( int argc ,
             break ;
          }
          ptr->SetColor( nb ) ;
-         color = true ;
+         colorSet = true ;
          pos++ ;
       }
       else if( !strcmp( argv[ pos ] , "-y" ) )
       {
-         if( type )
+         if( typeSet )
          {
            std::cerr << "Error: Multiple types given for one object" << std::endl ;
             exit = 1 ;
@@ -273,7 +295,7 @@ int ReadVolumeSubArguments( int argc ,
             ptr->PrintVolumeTypes() ;
             break ;
          }
-         type = true ;
+         typeSet = true ;
          pos++ ;
       }
       else
@@ -414,17 +436,21 @@ int AddModel( InputClass *input , vtkMRMLScene* scene )
 int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
 {
    int output = 0 ;
-   vtkMRMLVolumeArchetypeStorageNode* snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
-   snode->SetFileName( volume->GetFileName().c_str() ) ;
-   std::string storageName = volume->GetNodeName() + "Storage" ;
-   snode->SetName( storageName.c_str() ) ;
-   scene->AddNode( snode ) ;
    if( !volume->GetVolumeType().compare( "scalar" ) )
    {
+     vtkMRMLVolumeArchetypeStorageNode* snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
+     snode->SetFileName( volume->GetFileName().c_str() ) ;
+     std::string storageName = volume->GetNodeName() + "Storage" ;
+     snode->SetName( storageName.c_str() ) ;
+     scene->AddNode( snode ) ;
       vtkMRMLScalarVolumeDisplayNode *dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
       dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
       scene->AddNode( dnode ) ;
       vtkMRMLScalarVolumeNode* inode = vtkMRMLScalarVolumeNode::New() ;
+      if( volume->IsLabelMap() )
+      {
+        inode->LabelMapOn() ;
+      }
       inode->SetName( volume->GetNodeName().c_str() ) ;
       inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
       inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
@@ -438,10 +464,92 @@ int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
       }
       inode->Delete() ;
       dnode->Delete() ;
+      snode->Delete() ;
    }
-   
-   snode->Delete() ;
-
+   else if( !volume->GetVolumeType().compare( "DWI" ) )
+   {
+     vtkMRMLNRRDStorageNode* snode = vtkMRMLNRRDStorageNode::New() ;
+     snode->SetFileName( volume->GetFileName().c_str() ) ;
+     std::string storageName = volume->GetNodeName() + "Storage" ;
+     snode->SetName( storageName.c_str() ) ;
+     scene->AddNode( snode ) ;
+     vtkMRMLDiffusionWeightedVolumeDisplayNode *dnode = vtkMRMLDiffusionWeightedVolumeDisplayNode::New() ;
+     dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
+     scene->AddNode( dnode ) ;
+     vtkMRMLDiffusionWeightedVolumeNode* inode = vtkMRMLDiffusionWeightedVolumeNode::New() ;
+     inode->SetName( volume->GetNodeName().c_str() ) ;
+     inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
+     inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
+     if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
+     {
+       output = 1 ;
+     }
+     if( !output )
+     {
+       scene->AddNode( inode ) ;
+     }
+     inode->Delete() ;
+     dnode->Delete() ;
+     snode->Delete() ;
+   }
+   else if( !volume->GetVolumeType().compare( "DTI" ) )
+   {
+     vtkMRMLNRRDStorageNode* snode = vtkMRMLNRRDStorageNode::New() ;
+     snode->SetFileName( volume->GetFileName().c_str() ) ;
+     std::string storageName = volume->GetNodeName() + "Storage" ;
+     snode->SetName( storageName.c_str() ) ;
+     scene->AddNode( snode ) ;
+     vtkMRMLDiffusionTensorVolumeDisplayNode *dnode = vtkMRMLDiffusionTensorVolumeDisplayNode::New() ;
+     dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
+     scene->AddNode( dnode ) ;
+     vtkMRMLDiffusionTensorVolumeNode* inode = vtkMRMLDiffusionTensorVolumeNode::New() ;
+     inode->SetName( volume->GetNodeName().c_str() ) ;
+     if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
+     {
+       output = 1 ;
+     }
+     if( !output )
+     {
+       scene->AddNode( inode ) ;
+     }
+     inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
+     inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
+     inode->Delete() ;
+     dnode->Delete() ;
+     snode->Delete() ;
+   }
+   else if( !volume->GetVolumeType().compare( "vector" ) )
+   {
+     vtkMRMLVolumeArchetypeStorageNode* snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
+     snode->SetFileName( volume->GetFileName().c_str() ) ;
+     std::string storageName = volume->GetNodeName() + "Storage" ;
+     snode->SetName( storageName.c_str() ) ;
+     scene->AddNode( snode ) ;
+     vtkMRMLVectorVolumeDisplayNode *dnode = vtkMRMLVectorVolumeDisplayNode::New() ;
+     dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
+     dnode->SetVisualizationModeToScalarVolume();
+     scene->AddNode( dnode ) ;
+     vtkMRMLVectorVolumeNode* inode = vtkMRMLVectorVolumeNode::New() ;
+     inode->SetName( volume->GetNodeName().c_str() ) ;
+     if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
+     {
+       output = 1 ;
+     }
+     if( !output )
+     {
+       scene->AddNode( inode ) ;
+     }
+     inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
+     inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
+     inode->Delete() ;
+     dnode->Delete() ;
+     snode->Delete() ;
+   }
+   else
+   {
+     std::cerr << "Error: Volume type unknown" << std::endl ;
+     output = 1 ;
+  }
    return output ;
 }
 
