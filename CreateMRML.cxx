@@ -11,6 +11,11 @@
 #include <vtkMRMLDiffusionTensorVolumeDisplayNode.h>
 #include <vtkMRMLDiffusionWeightedVolumeNode.h>
 #include <vtkMRMLNRRDStorageNode.h>
+#include <vtkMRMLModelStorageNode.h>
+#include <vtkMRMLModelNode.h>
+#include <vtkMRMLDisplayNode.h>
+#include <vtkMRMLColorTableNode.h>
+#include <vtkMRMLColorTableStorageNode.h>
 
 #include "ModelClass.h"
 #include "TransformClass.h"
@@ -26,7 +31,9 @@
 -p parent
 -n Node name
 -f File name
--c color
+-cc color code
+-dc displayed color
+-op opacity
 -y volume type
 format: 
 t: transform
@@ -49,7 +56,7 @@ If error: prints exec_name -h to print help
 void PrintHelp( const char* arg0 , bool extended )
 {
    std::cout << "usage: " << std::endl ;
-   std::cout << arg0 << " SceneFileName [-t/-v/-m][-f/-p/-n][-c/-y][-h]" << std::endl ;
+   std::cout << arg0 << " SceneFileName [-t/-v/-m][-f/-p/-n][-dc/-op][-cc][-y][-h]" << std::endl ;
    if( !extended )
    {
       return ;
@@ -65,9 +72,12 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-p ParentNodeName (default: no parent)" << std::endl ;
    std::cout << "-n NodeName (default: name of the file stripped from extension and directory)" << std::endl ;
    std::cout << std::endl ;
-   std::cout << "If node is a volume:" << std::endl ;
+   std::cout << "If node is a volume or a model:" << std::endl ;
+   std::cout << "-cc ColorCode (default: 1 [grey])" << std::endl ;
+   std::cout << "-op Opacity (default: 1)" << std::endl ;
+   std::cout << "-dc r,g,b (default: 0.5,0.5,0.5)" << std::endl ;
    std::cout << std::endl ;
-   std::cout << "-c ColorCode (default: 1 [grey])" << std::endl ;
+   std::cout << "If node is a volume:" << std::endl ;
    std::cout << "-y VolumeType (default: scalar)" << std::endl ;
    std::cout << "-l: Label map (only for scalar volumes)" << std::endl ;
    std::cout << std::endl ;
@@ -128,6 +138,103 @@ int ReadCommonSubArguments( std::string arg , std::string value , InputClass* pt
 }
 
 
+int CheckColorArgument( bool &colorCodeSet ,
+                        const char *argv ,
+                        ColorableClass* ptr
+                      )
+{
+  if( colorCodeSet )
+  {
+    std::cerr << "Error: Multiple color codes given for one object" << std::endl ;
+    return 1 ;
+  }
+  colorCodeSet = true ;
+  std::istringstream stream ;
+  stream.str( argv ) ;
+  int nb ;
+  stream >> nb ;
+  if( stream.good() )
+  {
+    if( nb < ptr->GetFirstColor() || nb > ptr->GetLastColor() )
+    {
+       std::cerr << "Color Table: " << std::endl ;
+       ptr->PrintColors() ;
+       return 1 ;
+    }
+    ptr->SetColor( nb ) ;
+  }
+  else
+  {
+     ptr->SetColorString( argv ) ;
+  }
+  return 0 ;
+}
+
+int ReadColorFindValue( std::string argv , double &val )
+{
+   std::istringstream stream( argv ) ;
+   stream >> val ;
+   if( stream.bad() )
+   {
+      std::cerr << "Error: Problem reading color values" << std::endl ;
+      return 1 ;
+   }
+   return 0 ;
+}
+
+int ReadColorArgument( bool &colorSet ,
+                       std::string argv ,
+                       ColorableClass* ptr
+                     )
+{
+   if( colorSet )
+   {
+      std::cerr << "Error: Multiple colors given for one object" << std::endl ;
+      return 1 ;
+   }
+   double RGB[ 3 ] ;
+   for( int i = 0 ; i < 2 ; i++ )
+   {
+      std::size_t pos = argv.find( "," ) ;
+      if( std::string::npos != pos )
+      {
+         if( ReadColorFindValue( argv.substr( 0 , pos ) , RGB[ i ] ) )
+         {
+            return 1 ;
+         }
+         argv = argv.substr( pos + 1 , argv.size() - pos - 2 ) ;
+      }
+   }
+   if( ReadColorFindValue( argv , RGB[ 2 ] ) )
+   {
+      return 1 ;
+   }
+   return ptr->SetRGB( RGB[ 0 ] , RGB[ 1 ] , RGB[ 2 ] ) ;
+}
+
+
+int ReadOpacityArgument( bool &opacitySet , const char* str , ColorableClass *object )
+{
+   if( opacitySet )
+   {
+      std::cerr << "Multiple opacities given for one object" << std::endl ;
+      return 1 ;
+   }
+   opacitySet = true ;
+   std::istringstream stream ;
+   stream.str( str ) ;
+   double val ;
+   stream >> val ;
+   if( stream.bad() || object->SetOpacity( val ) )
+   { 
+      std::cerr << "Value must be between 0.0 and 1.0" << std::endl ;
+      return 1 ;
+   }
+   object->SetOpacity( val ) ;
+   return 0 ;
+}
+
+
 int ReadModelSubArguments( int argc ,
                            const char *argv[] ,
                            int &pos ,
@@ -136,6 +243,9 @@ int ReadModelSubArguments( int argc ,
 {
    ModelClass* ptr = new ModelClass ;
    int exit = 0 ;
+   bool colorCodeSet = false ;
+   bool colorSet = false ;
+   bool opacitySet = false ;
    while( pos < argc - 2 )
    {
       pos++ ;
@@ -148,6 +258,33 @@ int ReadModelSubArguments( int argc ,
       {
         pos++ ;
          continue ;
+      }
+      if( !strcmp( argv[ pos ] , "-cc" ) )
+      {
+         if( CheckColorArgument( colorCodeSet , argv[ pos + 1 ] , ptr ) )
+         {
+            exit = 1 ;
+            break ;
+         }
+         pos++ ;
+      }
+      else if( !strcmp( argv[ pos ] , "-op" ) )
+      {
+         if( ReadOpacityArgument( opacitySet , argv[ pos + 1 ] , ptr ) )
+         {
+            exit = 1 ;
+            break ;
+         }
+         pos++ ;
+      }
+      else if( !strcmp( argv[ pos ] , "-dc" ) )
+      {
+         if( ReadColorArgument( colorSet , argv[ pos + 1 ] , ptr ) )
+         {
+            exit = 1 ;
+            break ;
+         }
+         pos++ ;
       }
       else
       {
@@ -218,9 +355,11 @@ int ReadVolumeSubArguments( int argc ,
                           )
 {
    VolumeClass* ptr = new VolumeClass ;
+   bool colorCodeSet = false ;
    bool colorSet = false ;
    bool typeSet = false ;
    bool labelSet = false ;
+   bool opacitySet = false ;
    int exit = 0 ;
    while( pos < argc - 1 )
    {
@@ -251,35 +390,29 @@ int ReadVolumeSubArguments( int argc ,
         pos++ ;
          continue ;
       }
-      if( !strcmp( argv[ pos ] , "-c" ) )
+      if( !strcmp( argv[ pos ] , "-cc" ) )
       {
-         if( colorSet )
+         if( CheckColorArgument( colorCodeSet , argv[ pos + 1 ] , ptr ) )
          {
-           std::cerr << "Error: Multiple colors given for one object" << std::endl ;
             exit = 1 ;
             break ;
          }
-         std::istringstream stream ;
-         stream.str( argv[ pos + 1 ] ) ;
-         int nb ;
-         try
+      }
+      else if( !strcmp( argv[ pos ] , "-op" ) )
+      {
+         if( ReadOpacityArgument( opacitySet , argv[ pos + 1 ] , ptr ) )
          {
-           stream >> nb ;
-           if( nb < ptr->GetFirstColor() || nb > ptr->GetLastColor() )
-           {
-              throw "error: index ouside of range" ;
-           }
-         }
-         catch(...)
-         {
-            std::cerr << "Color Table: " << std::endl ;
-            ptr->PrintColors() ;
             exit = 1 ;
             break ;
          }
-         ptr->SetColor( nb ) ;
-         colorSet = true ;
-         pos++ ;
+      }
+      else if( !strcmp( argv[ pos ] , "-dc" ) )
+      {
+         if( ReadColorArgument( colorSet , argv[ pos + 1 ] , ptr ) )
+         {
+            exit = 1 ;
+            break ;
+         }
       }
       else if( !strcmp( argv[ pos ] , "-y" ) )
       {
@@ -330,7 +463,10 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
    {
       i = 2 ;
    }
-   if( !strcmp( argv[ 1 ] , "-v" ) || !strcmp( argv[ 1 ] , "-t" ) || !strcmp( argv[ 1 ] , "-m" ) )
+   if( !strcmp( argv[ 1 ] , "-v" )
+    || !strcmp( argv[ 1 ] , "-t" )
+    || !strcmp( argv[ 1 ] , "-m" )
+     )
    {
       std::cerr << "First argument must be the scene file name [or -h]" << std::endl ;
       PrintHelp( argv[ 0 ] , 0 ) ;
@@ -371,7 +507,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       {
          PrintHelp( argv[ 0 ] , 0 ) ;
          return 1 ;
-      }     
+      }
    }
    return 0 ;
 }
@@ -407,8 +543,6 @@ int AddTransform( InputClass *input , vtkMRMLScene* scene )
    int output = 0 ;
    vtkMRMLTransformStorageNode* snode = vtkMRMLTransformStorageNode::New() ;
    snode->SetFileName( input->GetFileName().c_str() ) ;
-   std::string storageName = input->GetNodeName() + "Storage" ;
-   snode->SetName( storageName.c_str() ) ;
    scene->AddNodeNoNotify( snode ) ;
 
    vtkMRMLLinearTransformNode* lnode = vtkMRMLLinearTransformNode::New() ;
@@ -428,14 +562,65 @@ int AddTransform( InputClass *input , vtkMRMLScene* scene )
 }
 
 
-int AddModel( InputClass *input , vtkMRMLScene* scene )
+int AddColorable( ColorableClass* colorable ,
+                  vtkMRMLDisplayNode* dnode ,
+                  vtkMRMLStorageNode* snode ,
+                  vtkMRMLDisplayableNode* inode ,
+                  vtkMRMLScene* scene
+                )
 {
-   return 0 ;
+   int output = EXIT_SUCCESS ;
+   snode->SetFileName( colorable->GetFileName().c_str() ) ;
+   scene->AddNode( snode ) ;
+   dnode->SetOpacity( colorable->GetOpacity() ) ;
+   double colorRGB[ 3 ] ;
+   colorRGB[ 0 ] = colorable->GetR() ;
+   colorRGB[ 1 ] = colorable->GetG() ;
+   colorRGB[ 2 ] = colorable->GetB() ;
+   dnode->SetColor( colorRGB ) ;
+   if( !strcmp( colorable->GetColorString() , "" ) )
+   {
+      std::cout << "plop" <<std::endl ;
+     dnode->SetAndObserveColorNodeID( colorable->GetColor() ) ;
+   }
+   else
+   {
+      vtkMRMLColorTableStorageNode *ctsnode = vtkMRMLColorTableStorageNode::New() ;
+      ctsnode->SetFileName( colorable->GetColorString() ) ;
+      vtkMRMLColorTableNode *ctnode = vtkMRMLColorTableNode::New() ;
+      ctnode->SetAndObserveStorageNodeID( ctsnode->GetID() ) ;
+      dnode->SetAndObserveColorNodeID( ctnode->GetID() ) ;
+      ctnode->Delete() ;
+      ctsnode->Delete() ;
+   }
+   scene->AddNode( dnode ) ;
+   inode->SetName( colorable->GetNodeName().c_str() ) ;
+   inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
+   inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
+   if( SetParentNode( inode , colorable->GetParentName().c_str() , scene ) )
+   {
+      output = EXIT_FAILURE ;
+   }
+   if( !output )
+   {
+      scene->AddNode( inode ) ;
+   }
+   inode->Delete() ;
+   dnode->Delete() ;
+   snode->Delete() ;
+   return output ;
+}
+
+int AddModel( ModelClass *model , vtkMRMLScene* scene )
+{
+   vtkMRMLModelStorageNode *snode = vtkMRMLModelStorageNode::New() ;
+   vtkMRMLModelDisplayNode *dnode = vtkMRMLModelDisplayNode::New() ;
+   vtkMRMLModelNode *inode = vtkMRMLModelNode::New() ;
+   return AddColorable( model , dnode , snode , inode , scene ) ;
 }
 
 int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
 {
-   int output = EXIT_SUCCESS ;
    vtkMRMLStorageNode *snode ;
    vtkMRMLScalarVolumeDisplayNode* dnode ;
    vtkMRMLVolumeNode *inode ;
@@ -473,29 +658,7 @@ int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
      std::cerr << "Error: Volume type unknown" << std::endl ;
      return EXIT_FAILURE ;
    }
-   snode->SetFileName( volume->GetFileName().c_str() ) ;
-   std::string storageName = volume->GetNodeName() + "Storage" ;
-   snode->SetName( storageName.c_str() ) ;
-   scene->AddNode( snode ) ;
-   dnode->SetAndObserveColorNodeID( volume->GetColor() ) ;
-   scene->AddNode( dnode ) ;
-   
-   inode->SetName( volume->GetNodeName().c_str() ) ;
-   if( SetParentNode( inode ,  volume->GetParentName().c_str() , scene ) )
-   {
-     output = EXIT_FAILURE ;
-   }
-   if( !output )
-   {
-     scene->AddNode( inode ) ;
-   }
-   inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-   inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-   inode->Delete() ;
-   dnode->Delete() ;
-   snode->Delete() ;
-
-   return output ;
+   return AddColorable( volume , dnode , snode , inode , scene ) ;
 }
 
 void CheckNodeName( std::vector< InputClass* > &arguments )
@@ -566,12 +729,18 @@ int main( int argc , const char* argv[] )
         if( AddTransform( arguments[ i ] , scene ) )
         {
           output = EXIT_FAILURE ;
-         break ;           
+         break ;
         }
       }
       if( !arguments[ i ]->GetType().compare( "Model" ) )
       {
-         if( AddModel( arguments[ i ] , scene ) )
+         ModelClass *model= dynamic_cast< ModelClass*>( arguments[ i ] ) ;
+         if( !model )
+         {
+            std::cerr << "Problem dynamic casting ModelClass: This should never happen!!!!" << std::endl ;
+            return EXIT_FAILURE ;
+         }
+         if( AddModel( model , scene ) )
          {
            output = EXIT_FAILURE ;
            break ;

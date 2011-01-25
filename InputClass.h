@@ -1,7 +1,17 @@
-#ifndef InputClass_h
-#define InputClass_h
+#ifndef _InputClass_h
+#define _InputClass_h
 
 #include <string>
+
+#define CORRECTVALUEMACRO( x , error )\
+if( x >= 0.0 && x <= 1.0 )\
+{\
+  error = 0 ;\
+}\
+else\
+{\
+  error = 1 ;\
+}\
 
 class InputClass
 {

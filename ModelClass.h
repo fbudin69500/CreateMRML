@@ -1,9 +1,9 @@
-#ifndef ModelClass_h
-#define ModelClass_h
+#ifndef _ModelClass_h
+#define _ModelClass_h
 
-#include "InputClass.h"
+#include "ColorableClass.h"
 
-class ModelClass : public InputClass
+class ModelClass : public ColorableClass
 {
    public:
       std::string GetType()
