@@ -1,25 +1,4 @@
-#include <vtkMRMLScene.h>
-#include <vtkMRMLLinearTransformNode.h>
-#include <vtkMRMLTransformStorageNode.h>
-#include <vtkMRMLScalarVolumeNode.h>
-#include <vtkMRMLVolumeArchetypeStorageNode.h>
-#include <vtkMRMLScalarVolumeDisplayNode.h>
-#include <vtkMRMLDiffusionWeightedVolumeDisplayNode.h>
-#include <vtkMRMLVectorVolumeNode.h>
-#include <vtkMRMLVectorVolumeDisplayNode.h>
-#include <vtkMRMLDiffusionTensorVolumeNode.h>
-#include <vtkMRMLDiffusionTensorVolumeDisplayNode.h>
-#include <vtkMRMLDiffusionWeightedVolumeNode.h>
-#include <vtkMRMLNRRDStorageNode.h>
-#include <vtkMRMLModelStorageNode.h>
-#include <vtkMRMLModelNode.h>
-#include <vtkMRMLDisplayNode.h>
-#include <vtkMRMLColorTableNode.h>
-#include <vtkMRMLColorTableStorageNode.h>
-#include <vtkMRMLFiducialListStorageNode.h>
-#include <vtkMRMLFiducialListNode.h>
-
-
+#include "CreateMRMLScene.h"
 #include "ModelClass.h"
 #include "TransformClass.h"
 #include "VolumeClass.h"
@@ -767,194 +746,19 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
 }
 
 
-int SetParentNode( vtkMRMLTransformableNode *child , const char* parentName , vtkMRMLScene* scene )
-{
-  if( !strcmp( parentName , "" ) )
-  {
-    return 0 ;
-  }
-  vtkMRMLNode* node = NULL ;
-  //     vtkMRMLNode* node = scene->GetNodeByID( input->GetParentName() ) ;
-  for( int i = 0 ; i < scene->GetNumberOfNodes() ; i++ )
-  {
-    vtkMRMLNode* tempnode = scene->GetNthNode( i) ;
-    if( !strcmp( tempnode->GetName() , parentName ) )
-    {
-      node = tempnode ;
-    }
-  }
-  if( !node )
-  {
-    std::cerr << "Parent node does not exist. Set parent before child" << std::endl ;
-    return 1 ;
-  }
-  child->SetAndObserveTransformNodeID( node->GetID() ) ;
-  return 0 ;
-}
-
-int AddTransform( InputClass *input , vtkMRMLScene* scene )
-{
-   int output = 0 ;
-   vtkMRMLTransformStorageNode* snode = vtkMRMLTransformStorageNode::New() ;
-   snode->SetFileName( input->GetFileName().c_str() ) ;
-   scene->AddNode( snode ) ;
-
-   vtkMRMLLinearTransformNode* lnode = vtkMRMLLinearTransformNode::New() ;
-   if( !input->GetNodeName().empty() )
-   {
-     lnode->SetName( input->GetNodeName().c_str() ) ;
-   }
-   lnode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-   if( SetParentNode( lnode ,  input->GetParentName().c_str() , scene ) )
-   {
-     output = 1 ;
-   }
-   if( !output )
-   {
-     scene->AddNode( lnode ) ;
-   }
-   snode->Delete() ;
-   lnode->Delete() ;
-   return  output ;
-}
 
 
-int AddColorable( ColorableClass* colorable ,
-                  vtkMRMLDisplayNode* dnode ,
-                  vtkMRMLStorageNode* snode ,
-                  vtkMRMLDisplayableNode* inode ,
-                  vtkMRMLScene* scene
-                )
-{
-   int output = EXIT_SUCCESS ;
-   snode->SetFileName( colorable->GetFileName().c_str() ) ;
-   scene->AddNode( snode ) ;
-   dnode->SetOpacity( colorable->GetOpacity() ) ;
-   double colorRGB[ 3 ] ;
-   colorRGB[ 0 ] = colorable->GetR() ;
-   colorRGB[ 1 ] = colorable->GetG() ;
-   colorRGB[ 2 ] = colorable->GetB() ;
-   dnode->SetColor( colorRGB ) ;
-   if( !strcmp( colorable->GetColorString() , "" ) )
-   {
-     dnode->SetAndObserveColorNodeID( colorable->GetColor() ) ;
-   }
-   else
-   {
-      vtkMRMLColorTableStorageNode *ctsnode = vtkMRMLColorTableStorageNode::New() ;
-      ctsnode->SetFileName( colorable->GetColorString() ) ;
-      vtkMRMLColorTableNode *ctnode = vtkMRMLColorTableNode::New() ;
-      scene->AddNode( ctsnode ) ;
-      scene->AddNode( ctnode ) ;
-      ctnode->SetAndObserveStorageNodeID( ctsnode->GetID() ) ;
-      dnode->SetAndObserveColorNodeID( ctnode->GetID() ) ;
-      ctnode->Delete() ;
-      ctsnode->Delete() ;
-   }
-   scene->AddNode( dnode ) ;
-   if( !colorable->GetNodeName().empty() )
-   {
-     inode->SetName( colorable->GetNodeName().c_str() ) ;
-   }
-   inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-   inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-   if( SetParentNode( inode , colorable->GetParentName().c_str() , scene ) )
-   {
-      output = EXIT_FAILURE ;
-   }
-   if( !output )
-   {
-      scene->AddNode( inode ) ;
-   }
-   inode->Delete() ;
-   dnode->Delete() ;
-   snode->Delete() ;
-   return output ;
-}
-
-int AddModel( ModelClass *model , vtkMRMLScene* scene )
-{
-   vtkMRMLModelStorageNode *snode = vtkMRMLModelStorageNode::New() ;
-   vtkMRMLModelDisplayNode *dnode = vtkMRMLModelDisplayNode::New() ;
-   vtkMRMLModelNode *inode = vtkMRMLModelNode::New() ;
-   return AddColorable( model , dnode , snode , inode , scene ) ;
-}
-
-int AddFiducial( FiducialClass *fiducial , vtkMRMLScene* scene )
-{
-  bool output = EXIT_SUCCESS ;
-  if( fiducial->GetId().empty() )
-  {
-     return EXIT_FAILURE ;
-  }
-  vtkMRMLFiducialListNode *inode = vtkMRMLFiducialListNode::New() ;
-  scene->AddNode( inode ) ;
-  std::vector< float > xyz = fiducial->GetPosition() ;
-  inode->AddFiducialWithLabelXYZSelectedVisibility( fiducial->GetLabel().c_str() ,
-                                                    xyz[ 0 ] ,
-                                                    xyz[ 1 ] ,
-                                                    xyz[ 2 ] ,
-                                                    fiducial->IsSelected() ,
-                                                    fiducial->IsVisible()
-                                                  ) ;
-  std::vector< float > wxyz = fiducial->GetOrientation() ;
-  inode->SetNthFiducialOrientation( 0 , wxyz[ 0 ] , wxyz[ 1 ] , wxyz[ 2 ] , wxyz[ 3 ] ) ;
-
-  inode->SetNthFiducialID( 0 , fiducial->GetId().c_str() ) ;
-  inode->SetColor( fiducial->GetR() , fiducial->GetG() , fiducial->GetB() ) ;
-  inode->SetTextScale( fiducial->GetTextScale() ) ;
-  std::vector< float > sc = fiducial->GetSelectedColor() ;
-  inode->SetSelectedColor( sc[ 0 ] , sc[ 1 ] , sc[ 2 ] ) ;
-  if( SetParentNode( inode , fiducial->GetParentName().c_str() , scene ) )
-  {
-    output = EXIT_FAILURE ;
-  }
-  inode->Delete() ;
-  return output ;
-}
 
 
-int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
-{
-   vtkMRMLStorageNode *snode ;
-   vtkMRMLScalarVolumeDisplayNode* dnode ;
-   vtkMRMLVolumeNode *inode ;
-   if( !volume->GetVolumeType().compare( "scalar" ) )
-   {
-     snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
-     dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
-     vtkMRMLScalarVolumeNode *vnode = vtkMRMLScalarVolumeNode::New() ;
-     if( volume->IsLabelMap() )
-     {
-       vnode->LabelMapOn() ;
-     }
-     inode = vnode ;
-   }
-   else if( !volume->GetVolumeType().compare( "DWI" ) )
-   {
-     snode = vtkMRMLNRRDStorageNode::New() ;
-     dnode = vtkMRMLDiffusionWeightedVolumeDisplayNode::New() ;
-     inode = vtkMRMLDiffusionWeightedVolumeNode::New() ;
-   }
-   else if( !volume->GetVolumeType().compare( "DTI" ) )
-   {
-     snode = vtkMRMLNRRDStorageNode::New() ;
-     dnode = vtkMRMLDiffusionTensorVolumeDisplayNode::New() ;
-     inode = vtkMRMLDiffusionTensorVolumeNode::New() ;
-   }
-   else if( !volume->GetVolumeType().compare( "vector" ) )
-   {
-     snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
-     dnode = vtkMRMLVectorVolumeDisplayNode::New() ;
-     inode = vtkMRMLVectorVolumeNode::New() ;
-   }
-   else
-   {
-     std::cerr << "Error: Volume type unknown" << std::endl ;
-     return EXIT_FAILURE ;
-   }
-   return AddColorable( volume , dnode , snode , inode , scene ) ;
-}
+
+
+
+
+
+
+
+
+
 
 void CheckNodeName( std::vector< InputClass* > &arguments )
 {
@@ -980,25 +784,6 @@ void CheckNodeName( std::vector< InputClass* > &arguments )
    }
 }
 
-//Check that each node name is unique
-int CheckDoublons( std::vector< InputClass* > arguments )
-{
-   for( unsigned int i = 0 ; i < arguments.size() - 1 ; i++ )
-   {
-     for( unsigned int j = i + 1 ; j < arguments.size() ; j++ )
-      {
-         if( !arguments[ i ]->GetNodeName().empty() )
-         {
-           if( !arguments[ i ]->GetNodeName().compare( arguments[ j ]->GetNodeName() ) )
-           {
-             return 1 ;
-           }
-         }
-      }
-   }
-   return 0 ;
-}
-
 void DeleteArguments( std::vector< InputClass* > arguments )
 {
    for( unsigned int i = 0 ; i < arguments.size() ; i++ )
@@ -1009,104 +794,25 @@ void DeleteArguments( std::vector< InputClass* > arguments )
 
 int main( int argc , const char* argv[] )
 {
-   int output ;
-   std::vector< InputClass* > arguments ;
-   output = ReadArguments( argc , argv , arguments ) ;
-   if( output > 0 )
-   {
-      DeleteArguments( arguments ) ;
-      return EXIT_FAILURE ;
-   }
-   else if( output < 0 )
-   {
-      DeleteArguments( arguments ) ;
-      return EXIT_SUCCESS ;
-   }
-   output = EXIT_SUCCESS ;
-   std::string sceneName = argv[ 1 ] ;
-   CheckNodeName( arguments ) ;
-   if( CheckDoublons( arguments ) )
-   {
-      std::cerr << "Error: Some node names appear multiple times. Please verify your input information" << std::endl ;
-      for( unsigned int i = 0 ; i < arguments.size() ; i++ )
-      {
-         if( arguments[ i ]->GetNodeName().empty() )
-         {
-            continue ;
-         }
-         std::cerr << arguments[ i ]->GetFileName() << " : " << arguments[ i ]->GetNodeName() << std::endl ;
-      }
-      DeleteArguments( arguments ) ;
-      return EXIT_FAILURE ;
-   }
-   //Create scene
-   vtkMRMLScene* scene = vtkMRMLScene::New() ;
-   for( unsigned int i = 0 ; i < arguments.size() ; i++ )
-   {
-      if( !arguments[ i ]->GetType().compare( "Transform" ) )
-      {
-        if( AddTransform( arguments[ i ] , scene ) )
-        {
-          output = EXIT_FAILURE ;
-          break ;
-        }
-      }
-      else if( !arguments[ i ]->GetType().compare( "Model" ) )
-      {
-         ModelClass *model= dynamic_cast< ModelClass*>( arguments[ i ] ) ;
-         if( !model )
-         {
-            std::cerr << "Problem dynamic casting ModelClass: This should never happen!!!!" << std::endl ;
-            output = EXIT_FAILURE ;
-            break ;
-         }
-         if( AddModel( model , scene ) )
-         {
-           output = EXIT_FAILURE ;
-           break ;
-        }
-      }
-      else if( !arguments[ i ]->GetType().compare( "Volume" ) )
-      {
-         VolumeClass *volume = dynamic_cast< VolumeClass*>( arguments[ i ] ) ;
-         if( !volume )
-         {
-            std::cerr << "Problem dynamic casting VolumeClass: This should never happen!!!!" << std::endl ;
-            output = EXIT_FAILURE ;
-            break ;
-         }
-         if( AddVolume( volume , scene ) )
-         {
-           output = EXIT_FAILURE ;
-           break ;
-        }
-      }
-      else if( !arguments[ i ]->GetType().compare( "FiducialList" ) )
-      {
-        FiducialClass *fiducial = dynamic_cast< FiducialClass*>( arguments[ i ] ) ;
-        if( !fiducial )
-        {
-          std::cerr << "Problem dynamic casting FiducialClass: This should never happen!!!!" << std::endl ;
-          output = EXIT_FAILURE ;
-          break ;
-        }
-        if( AddFiducial( fiducial , scene ) )
-        {
-          output = EXIT_FAILURE ;
-          break ;
-        }
-      }
-      else
-      {
-        std::cerr << "An error occured while writing the scene. Unexpected node found. This should never happen" << std::endl ;
-      }
-   }
-  if( output == EXIT_SUCCESS )
+  int output ;
+  std::vector< InputClass* > arguments ;
+  output = ReadArguments( argc , argv , arguments ) ;
+  if( output > 0 )
   {
-    scene->SetURL( sceneName.c_str() ) ;
-    scene->Commit() ;
+    DeleteArguments( arguments ) ;
+    return EXIT_FAILURE ;
   }
-  scene->Delete() ;
+  else if( output < 0 )
+  {
+    DeleteArguments( arguments ) ;
+    return EXIT_SUCCESS ;
+  }
+  output = EXIT_SUCCESS ;
+  CheckNodeName( arguments ) ;
+  CreateMRMLScene MRMLCreator ;
+  MRMLCreator.SetSceneName( argv[ 1 ] ) ;
+  MRMLCreator.SetInputs( arguments ) ;
+  output = MRMLCreator.Write() ;
   DeleteArguments( arguments ) ;
   return output ;
 }

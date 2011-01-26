@@ -2,6 +2,7 @@
 #define _FiducialClass_h
 
 #include "ColorableClass.h"
+#include <vector>
 
 class FiducialClass : public ColorableClass
 {

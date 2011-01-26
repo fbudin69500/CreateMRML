@@ -11,6 +11,8 @@ set(CreateMRML_SOURCE
  ModelClass.h
  TransformClass.h
  VolumeClass.h
+ CreateMRMLScene.h
+ CreateMRMLScene.cxx
 )
 
   find_package(Slicer3 REQUIRED)
