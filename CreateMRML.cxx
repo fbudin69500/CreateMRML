@@ -78,10 +78,12 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-p ParentNodeName (default: no parent)" << std::endl ;
    std::cout << "-n NodeName (default: name of the file stripped from extension and directory)" << std::endl ;
    std::cout << std::endl ;
-   std::cout << "If node is a volume or a model:" << std::endl ;
-   std::cout << "-cc ColorCode (default: 1 [grey])" << std::endl ;
+   std::cout << "If node is a volume, a fiducial or a model:" << std::endl ;
    std::cout << "-op Opacity (default: 1)" << std::endl ;
    std::cout << "-dc r,g,b (default: 0.5,0.5,0.5)" << std::endl ;
+   std::cout << std::endl ;
+   std::cout << "If node is a volume or a model:" << std::endl ;
+   std::cout << "-cc ColorCode (default: 1 [grey])" << std::endl ;
    std::cout << std::endl ;
    std::cout << "If node is a volume:" << std::endl ;
    std::cout << "-y VolumeType (default: scalar)" << std::endl ;
@@ -184,15 +186,81 @@ int ReadColorCodeArgument( bool &colorCodeSet ,
   return 0 ;
 }
 
-int ReadColorFindValue( std::string argv , double &val )
+int ReadValue( std::string argv , double &val , const char* text )
 {
    std::istringstream stream( argv ) ;
    stream >> val ;
    if( stream.fail() )
    {
-      std::cerr << "Error: Problem reading color values" << std::endl ;
+      std::cerr << "Error: Problem reading "<< text <<" values" << std::endl ;
       return 1 ;
    }
+   return 0 ;
+}
+
+
+int ReadVectors( std::string argv , std::vector< double > &vec , unsigned int size , const char* text)
+{
+//   double RGB[ 3 ] ;
+   vec.resize( size ) ;
+   std::vector< std::string > RGBstring( size , "" ) ;
+   std::size_t pos ;
+   for( unsigned int i = 0 ; i < size - 1 ; i++ )
+   {
+      pos = argv.find( "," ) ;
+      if( std::string::npos != pos )
+      {
+         RGBstring[ i ] = argv.substr( 0 , pos ) ;
+         argv = argv.substr( pos + 1 , argv.size() - pos  - 1 ) ;
+      }
+   }
+   pos = argv.find( "," ) ;
+   if( pos != std::string::npos )
+   {
+      std::cerr << "Error: Their should be only "<< size <<" values given for "<< text << std::endl ;
+   }
+   RGBstring[ size - 1 ] = argv ;
+   for( unsigned int i = 0 ; i < size ; i++ )
+   {
+      if( ReadValue( RGBstring[ i ] , vec[ i ] , text ) )
+      {
+         return 1 ;
+      }
+   }
+   return 0 ;
+}
+
+int ReadPositionArgument( bool &positionSet , std::string argv , FiducialClass* ptr )
+{
+   if( positionSet )
+   {
+      std::cerr << "Error: Multiple positions given for one object" << std::endl ;
+      return 1 ;
+   }
+   std::vector< double > position ;
+   if( ReadVectors( argv , position , 3 , "position" ) )
+   {
+      return 1 ;
+   }
+   ptr->SetPosition( position[ 0 ] , position[ 1 ] , position[ 2 ] ) ;
+   positionSet = true ;
+   return 0 ;
+}
+
+int ReadOrientationArgument( bool &orientationSet , std::string argv , FiducialClass* ptr )
+{
+   if( orientationSet )
+   {
+      std::cerr << "Error: Multiple orientations given for one object" << std::endl ;
+      return 1 ;
+   }
+   std::vector< double > orientation ;
+   if( ReadVectors( argv , orientation , 4 , "orientation" ) )
+   {
+      return 1 ;
+   }
+   ptr->SetOrientation( orientation[ 0 ] , orientation[ 1 ] , orientation[ 2 ] , orientation[ 3 ] ) ;
+   orientationSet = true ;
    return 0 ;
 }
 
@@ -206,36 +274,17 @@ int ReadColorArgument( bool &colorSet ,
       std::cerr << "Error: Multiple colors given for one object" << std::endl ;
       return 1 ;
    }
-   double RGB[ 3 ] ;
-   std::vector< std::string > RGBstring( 3, "" ) ;
-   std::size_t pos ;
-   for( int i = 0 ; i < 2 ; i++ )
+   std::vector< double > RGB ;
+   if( ReadVectors( argv , RGB , 3 , "color" ) )
    {
-      pos = argv.find( "," ) ;
-      if( std::string::npos != pos )
-      {
-         RGBstring[ i ] = argv.substr( 0 , pos ) ;
-         argv = argv.substr( pos + 1 , argv.size() - pos  - 1 ) ;
-      }
+      return 1 ;
    }
-   pos = argv.find( "," ) ;
-   if( pos != std::string::npos )
-   {
-     std::cerr << "Error: Their should be only 3 values given for the colors" << std::endl ;
-   }
-   RGBstring[ 2 ] = argv ;
-   for( int i = 0 ; i < 3 ; i++ )
-   {
-     if( ReadColorFindValue( RGBstring[ i ] , RGB[ i ] ) )
-     {
-       return 1 ;
-     }
-   }
-   if( ptr->SetRGB( RGB[ 0 ] , RGB[ 1 ] , RGB[ 2 ] ) )
+   if( ptr->SetRGB( (float)RGB[ 0 ] , (float)RGB[ 1 ] , (float)RGB[ 2 ] ) )
    {
      std::cerr << "Error: Color values must be between 0.0 and 1.0" << std::endl ;
      return 1 ;
    }
+   colorSet = true ;
    return 0 ;
 }
 
@@ -340,21 +389,23 @@ int ReadFiducialSubArguments( int argc ,
 )
 {
   FiducialClass* fiducial = new FiducialClass ;
-  "-id fiducialID"
+/*  "-id fiducialID"
   "-lbl label"
   "-pos x,y,z (position)"
   "-o w,x,y,z (orientation)"
-  "-sc textScale"
+  "-sc textScale"*/
   int exit = 0 ;
-  bool IdSet = false ;
+  bool idSet = false ;
   bool labelSet = false ;
   bool positionSet = false ;
   bool orientationSet = false ;
+  bool colorSet = false ;
+  bool opacitySet = false ;
   bool scaleSet = false ;
   while( pos < argc - 2 )
   {
     pos++ ;
-    exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , ptr ) ;
+    exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , fiducial ) ;
     if( exit > 0 )
     {
       break ;
@@ -368,10 +419,11 @@ int ReadFiducialSubArguments( int argc ,
     {
       if( idSet )
       {
+        std::cerr << "Error: Multiple Ids given for one fiducial" << std::endl ;
         exit = 1 ;
         break ;
       }
-      ptr->SetId( argv[ pos + 1 ] ) ;
+      fiducial->SetId( argv[ pos + 1 ] ) ;
       idSet = true ;
       pos++ ;
     }
@@ -379,21 +431,67 @@ int ReadFiducialSubArguments( int argc ,
     {
       if( labelSet )
       {
+        std::cerr << "Error: Multiple labels given for one fiducial" << std::endl ;
         exit = 1 ;
         break ;
       }
-      ptr->SetLabel( argv[ pos + 1 ] ) ;
+      fiducial->SetLabelText( argv[ pos + 1 ] ) ;
       labelSet = true ;
       pos++ ;
     }
-    else if( !strcmp( argv[ pos ] , "-dc" ) )
+    else if( !strcmp( argv[ pos ] , "-pos" ) )
     {
-      if( ReadColorArgument( colorSet , argv[ pos + 1 ] , ptr ) )
+      if( ReadPositionArgument( positionSet , argv[ pos + 1 ] , fiducial ) )
       {
         exit = 1 ;
         break ;
       }
       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-op" ) )
+    {
+       if( ReadOpacityArgument( opacitySet , argv[ pos + 1 ] , fiducial ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-dc" ) )
+    {
+       if( ReadColorArgument( colorSet , argv[ pos + 1 ] , fiducial ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-o" ) )
+    {
+       if( ReadOrientationArgument( orientationSet , argv[ pos + 1 ] , fiducial ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-sc" ) )
+    {
+       if( scaleSet )
+       {
+          std::cerr << "Error: Multiple scales given for one fiducial" << std::endl ;
+          exit = 1 ;
+          break ;
+       }
+       double scale ;
+       if( ReadValue( argv[ pos + 1 ] , scale , "scale value" ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       fiducial->SetTextScale( scale ) ;
+       scaleSet = true ;
+       pos++ ;
     }
     else
     {
@@ -404,10 +502,10 @@ int ReadFiducialSubArguments( int argc ,
   }
   if( exit == 1 )
   {
-    delete ptr ;
+    delete fiducial ;
     return 1 ;
   }
-  if( ptr->GetFileName().compare( "" ) )
+  if( fiducial->GetFileName().compare( "" ) )
   {
     std::cerr << "Error: No file name should be give for a fiducial" << std::endl ;
   }
@@ -415,7 +513,7 @@ int ReadFiducialSubArguments( int argc ,
   {
     pos-- ;
   }
-  arguments.push_back( ptr ) ;
+  arguments.push_back( fiducial ) ;
   return 0 ;
 }
 
@@ -481,7 +579,7 @@ int ReadVolumeSubArguments( int argc ,
       {
         if( labelSet )
         {
-          std::cerr << "Error: label flag given mutliple times for one object" << std::endl ;
+          std::cerr << "Error: label map flag given mutliple times for one object" << std::endl ;
           exit = 1 ;
           break ;
         }
@@ -534,7 +632,7 @@ int ReadVolumeSubArguments( int argc ,
       {
          if( typeSet )
          {
-           std::cerr << "Error: Multiple types given for one object" << std::endl ;
+            std::cerr << "Error: Multiple types given for one object" << std::endl ;
             exit = 1 ;
             break ;
          }
@@ -626,7 +724,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       else if( !strcmp( argv[ i ] , "-h" ) )
       {
          PrintHelp( argv[ 0 ] , 1 ) ;
-         return 0 ;
+         return -1 ;
       }
       else
       {
@@ -749,7 +847,8 @@ int AddFiducial( FiducialClass *fiducial , vtkMRMLScene* scene )
 {
   bool output = EXIT_SUCCESS ;
   vtkMRMLFiducialListNode *inode = vtkMRMLFiducialListNode::New() ;
-  std::vector< float > xyz = fiducial->Getxyz() ;
+  scene->AddNode( inode ) ;
+  std::vector< float > xyz = fiducial->GetPosition() ;
   inode->AddFiducialWithLabelXYZSelectedVisibility( fiducial->GetLabel().c_str() ,
                                                     xyz[ 0 ] ,
                                                     xyz[ 1 ] ,
@@ -759,15 +858,12 @@ int AddFiducial( FiducialClass *fiducial , vtkMRMLScene* scene )
                                                   ) ;
   std::vector< float > wxyz = fiducial->GetOrientation() ;
   inode->SetNthFiducialOrientation( 0 , wxyz[ 0 ] , wxyz[ 1 ] , wxyz[ 2 ] , wxyz[ 3 ] ) ;
+  inode->SetNthFiducialID( 0 , fiducial->GetId().c_str() ) ;
   inode->SetColor( fiducial->GetR() , fiducial->GetG() , fiducial->GetB() ) ;
   inode->SetTextScale( fiducial->GetTextScale() ) ;
   if( SetParentNode( inode , fiducial->GetParentName().c_str() , scene ) )
   {
     output = EXIT_FAILURE ;
-  }
-  if( !output )
-  {
-    scene->AddNode( inode ) ;
   }
   inode->Delete() ;
   return output ;
@@ -858,12 +954,18 @@ int CheckDoublons( std::vector< InputClass* > arguments )
 
 int main( int argc , const char* argv[] )
 {
-  int output = EXIT_SUCCESS ;
+   int output ;
    std::vector< InputClass* > arguments ;
-   if( ReadArguments( argc , argv , arguments ) )
+   output = ReadArguments( argc , argv , arguments ) ;
+   if( output > 0 )
    {
       return EXIT_FAILURE ;
    }
+   else if( output < 0 )
+   {
+      return EXIT_SUCCESS ;
+   }
+   output = EXIT_SUCCESS ;
    std::string sceneName = argv[ 1 ] ;
    CheckNodeName( arguments ) ;
    if( CheckDoublons( arguments ) )
@@ -915,7 +1017,7 @@ int main( int argc , const char* argv[] )
            break ;
         }
       }
-      if( !arguments[ i ]->GetType().compare( "Fiducial" ) )
+      if( !arguments[ i ]->GetType().compare( "FiducialList" ) )
       {
         FiducialClass *fiducial = dynamic_cast< FiducialClass*>( arguments[ i ] ) ;
         if( !fiducial )

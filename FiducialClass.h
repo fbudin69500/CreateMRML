@@ -14,8 +14,8 @@ public:
   std::string GetId() ;
   void SetLabelText( std::string ) ;
   std::string GetLabel() ;
-  void Setxyz( float , float , float ) ;
-  std::vector< float > Getxyz() ;
+  void SetPosition( float , float , float ) ;
+  std::vector< float > GetPosition() ;
   void SetOrientation( float , float , float , float ) ;
   std::vector< float > GetOrientation() ;
   void Selected( bool ) ;

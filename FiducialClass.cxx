@@ -33,7 +33,7 @@ void FiducialClass::Print()
 {
   ColorableClass::Print() ;
   std::cout << "Id: "<< m_Id << std::endl ;
-  std::string m_Label << std::endl ;
+  std::cout << "Label: " << m_Label << std::endl ;
   std::cout <<  "Position: " << m_X << " " <<  m_Y << " " << m_Z << std::endl ;
   std::cout <<  "Orientation: " << m_oW << " " << m_oX << " " <<  m_oY << " " <<  m_oZ << std::endl ;
   std::cout <<  "Is Selected: " << m_Selected << std::endl ;
@@ -60,14 +60,14 @@ std::string FiducialClass::GetLabel()
   return m_Label ;
 }
 
-void FiducialClass::Setxyz( float x , float y , float z )
+void FiducialClass::SetPosition( float x , float y , float z )
 {
   m_X = x ;
   m_Y = y ;
   m_Z = z ;
 }
 
-std::vector< float > FiducialClass::Getxyz()
+std::vector< float > FiducialClass::GetPosition()
 {
   std::vector< float > xyz( 3 ) ;
   xyz[ 0 ] = m_X ;
@@ -84,7 +84,7 @@ void FiducialClass::SetOrientation( float w , float x , float y , float z )
   m_oZ = z ;
 }
 
-std::vector< float > GetOrientation()
+std::vector< float > FiducialClass::GetOrientation()
 {
   std::vector< float > wxyz( 4 ) ;
   wxyz[ 0 ] = m_oW ;
@@ -111,5 +111,5 @@ void FiducialClass::Visibility( bool visible )
 
 bool FiducialClass::IsVisible()
 {
-  return m_Visible ;  
+  return m_Visible ;
 }
