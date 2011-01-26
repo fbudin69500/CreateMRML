@@ -18,6 +18,8 @@ public:
   std::vector< float > GetPosition() ;
   void SetOrientation( float , float , float , float ) ;
   std::vector< float > GetOrientation() ;
+  int SetSelectedColor( float , float , float ) ;
+  std::vector< float > GetSelectedColor() ;
   void Selected( bool ) ;
   bool IsSelected() ;
   void Visibility( bool ) ;
@@ -32,6 +34,7 @@ private:
   bool m_Selected ;
   bool m_Visible ;
   double m_TextScale ;
+  std::vector< float > m_RGB ;
 };
 
 #endif

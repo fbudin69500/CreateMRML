@@ -12,6 +12,7 @@ FiducialClass::FiducialClass()
   m_Selected = true ;
   m_Visible = true ;
   m_TextScale = 6.0 ;
+  m_RGB.resize( 3 , .5 ) ;
 }
 
 void  FiducialClass::SetTextScale( double scale )
@@ -112,4 +113,25 @@ void FiducialClass::Visibility( bool visible )
 bool FiducialClass::IsVisible()
 {
   return m_Visible ;
+}
+
+int FiducialClass::SetSelectedColor( float R , float G , float B )
+{
+   int error1 , error2 , error3 ;
+   CORRECTVALUEMACRO( R , error1 ) ;
+   CORRECTVALUEMACRO( G , error2 ) ;
+   CORRECTVALUEMACRO( R , error3 ) ;
+   if( error1 || error2 || error3 )
+   {
+      return 1 ;
+   }
+   m_RGB[ 0 ] = R ;
+   m_RGB[ 1 ] = G ;
+   m_RGB[ 2 ] = B ;
+   return 0 ;
+}
+  
+std::vector< float > FiducialClass::GetSelectedColor()
+{
+   return m_RGB ;
 }
