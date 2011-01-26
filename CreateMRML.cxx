@@ -16,10 +16,14 @@
 #include <vtkMRMLDisplayNode.h>
 #include <vtkMRMLColorTableNode.h>
 #include <vtkMRMLColorTableStorageNode.h>
+#include <vtkMRMLFiducialListStorageNode.h>
+#include <vtkMRMLFiducialListNode.h>
+
 
 #include "ModelClass.h"
 #include "TransformClass.h"
 #include "VolumeClass.h"
+#include "FiducialClass.h"
 #include <vector>
 #include <string.h>
 /*
@@ -39,6 +43,7 @@ format:
 t: transform
 v: volume
 m: model
+q: fiducial
 -t or -v or -m or -h
 if -t or -v or -m
     -f compulsory (file)
@@ -56,7 +61,7 @@ If error: prints exec_name -h to print help
 void PrintHelp( const char* arg0 , bool extended )
 {
    std::cout << "usage: " << std::endl ;
-   std::cout << arg0 << " SceneFileName [-t/-v/-m][-f/-p/-n][-dc/-op][-cc][-y][-h]" << std::endl ;
+   std::cout << arg0 << " SceneFileName [-t/-v/-m/-q][-f/-p/-n][-dc/-op][-cc][-y][-h]" << std::endl ;
    if( !extended )
    {
       return ;
@@ -65,10 +70,11 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-t: Adds a transform" << std::endl ;
    std::cout << "-v: Adds a volume" << std::endl ;
    std::cout << "-m: Adds a model" << std::endl ;
+   std::cout << "-q: Adds a fiducial" << std::endl ;
    std::cout << "-h: Prints help" << std::endl ;
    std::cout << std::endl ;
    std::cout << "For each object added to the scene:" << std::endl ;
-   std::cout << "-f FileName (compulsory!)[relative path fomr object file to scene file]" << std::endl ;
+   std::cout << "-f FileName (compulsory![except for fiducials])[relative path from object file to scene file]" << std::endl ;
    std::cout << "-p ParentNodeName (default: no parent)" << std::endl ;
    std::cout << "-n NodeName (default: name of the file stripped from extension and directory)" << std::endl ;
    std::cout << std::endl ;
@@ -80,6 +86,13 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "If node is a volume:" << std::endl ;
    std::cout << "-y VolumeType (default: scalar)" << std::endl ;
    std::cout << "-l: Label map (only for scalar volumes)" << std::endl ;
+   std::cout << std::endl ;
+   std::cout << "If node is a fiducial:" << std::endl ;
+   std::cout << "-id fiducialID" << std::endl ;
+   std::cout << "-lbl label" << std::endl ;
+   std::cout << "-pos x,y,z (position)" << std::endl ;
+   std::cout << "-o w,x,y,z (orientation)" << std::endl ;
+   std::cout << "-sc textScale" << std::endl ;
    std::cout << std::endl ;
    std::cout << "Color Table:" << std::endl ;
    VolumeClass volume ;
@@ -129,6 +142,7 @@ int ReadCommonSubArguments( std::string arg , std::string value , InputClass* pt
    else if( !arg.compare( "-t" )
          || !arg.compare( "-v" )
          || !arg.compare( "-m" )
+         || !arg.compare( "-q" )
          || !arg.compare( "-h" )
           )
    {
@@ -318,6 +332,93 @@ int ReadModelSubArguments( int argc ,
    return 0 ;
 }
 
+
+int ReadFiducialSubArguments( int argc ,
+                              const char *argv[] ,
+                              int &pos ,
+                              std::vector< InputClass* > &arguments
+)
+{
+  FiducialClass* fiducial = new FiducialClass ;
+  "-id fiducialID"
+  "-lbl label"
+  "-pos x,y,z (position)"
+  "-o w,x,y,z (orientation)"
+  "-sc textScale"
+  int exit = 0 ;
+  bool IdSet = false ;
+  bool labelSet = false ;
+  bool positionSet = false ;
+  bool orientationSet = false ;
+  bool scaleSet = false ;
+  while( pos < argc - 2 )
+  {
+    pos++ ;
+    exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , ptr ) ;
+    if( exit > 0 )
+    {
+      break ;
+    }
+    else if( exit < 0 )
+    {
+      pos++ ;
+      continue ;
+    }
+    if( !strcmp( argv[ pos ] , "-id" ) )
+    {
+      if( idSet )
+      {
+        exit = 1 ;
+        break ;
+      }
+      ptr->SetId( argv[ pos + 1 ] ) ;
+      idSet = true ;
+      pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-lbl" ) )
+    {
+      if( labelSet )
+      {
+        exit = 1 ;
+        break ;
+      }
+      ptr->SetLabel( argv[ pos + 1 ] ) ;
+      labelSet = true ;
+      pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-dc" ) )
+    {
+      if( ReadColorArgument( colorSet , argv[ pos + 1 ] , ptr ) )
+      {
+        exit = 1 ;
+        break ;
+      }
+      pos++ ;
+    }
+    else
+    {
+      std::cerr << "Error: No attributes found for one object" << std::endl ;
+      exit = 1 ;
+      break ;
+    }
+  }
+  if( exit == 1 )
+  {
+    delete ptr ;
+    return 1 ;
+  }
+  if( ptr->GetFileName().compare( "" ) )
+  {
+    std::cerr << "Error: No file name should be give for a fiducial" << std::endl ;
+  }
+  if( exit == 2 )
+  {
+    pos-- ;
+  }
+  arguments.push_back( ptr ) ;
+  return 0 ;
+}
+
 int ReadTransformSubArguments( int argc ,
                            const char *argv[] ,
                            int &pos ,
@@ -481,6 +582,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
    if( !strcmp( argv[ 1 ] , "-v" )
     || !strcmp( argv[ 1 ] , "-t" )
     || !strcmp( argv[ 1 ] , "-m" )
+    || !strcmp( argv[ 1 ] , "-q" )
      )
    {
       std::cerr << "First argument must be the scene file name [or -h]" << std::endl ;
@@ -491,7 +593,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
    {
       if( !strcmp( argv[ i ] , "-v" ) )
       {
-         if( ReadVolumeSubArguments( argc , argv ,i , arguments ) )
+         if( ReadVolumeSubArguments( argc , argv , i , arguments ) )
          {
             PrintHelp( argv[ 0 ] , 0 ) ;
             return 1 ;
@@ -499,7 +601,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       }
       else if( !strcmp( argv[ i ] , "-t" ) )
       {
-         if( ReadTransformSubArguments( argc , argv ,i , arguments ) )
+         if( ReadTransformSubArguments( argc , argv , i , arguments ) )
          {
             PrintHelp( argv[ 0 ] , 0 ) ;
             return 1 ;
@@ -507,11 +609,19 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       }
       else if( !strcmp( argv[ i ] , "-m" ) )
       {
-         if( ReadModelSubArguments( argc , argv ,i , arguments ) )
+         if( ReadModelSubArguments( argc , argv , i , arguments ) )
          {
             PrintHelp( argv[ 0 ] , 0 ) ;
             return 1 ;
          }
+      }
+      else if( !strcmp( argv[ i ] , "-q" ) )
+      {
+        if( ReadFiducialSubArguments( argc , argv , i , arguments ) )
+        {
+          PrintHelp( argv[ 0 ] , 0 ) ;
+          return 1 ;
+        }
       }
       else if( !strcmp( argv[ i ] , "-h" ) )
       {
@@ -635,6 +745,35 @@ int AddModel( ModelClass *model , vtkMRMLScene* scene )
    return AddColorable( model , dnode , snode , inode , scene ) ;
 }
 
+int AddFiducial( FiducialClass *fiducial , vtkMRMLScene* scene )
+{
+  bool output = EXIT_SUCCESS ;
+  vtkMRMLFiducialListNode *inode = vtkMRMLFiducialListNode::New() ;
+  std::vector< float > xyz = fiducial->Getxyz() ;
+  inode->AddFiducialWithLabelXYZSelectedVisibility( fiducial->GetLabel().c_str() ,
+                                                    xyz[ 0 ] ,
+                                                    xyz[ 1 ] ,
+                                                    xyz[ 2 ] ,
+                                                    fiducial->IsSelected() ,
+                                                    fiducial->IsVisible()
+                                                  ) ;
+  std::vector< float > wxyz = fiducial->GetOrientation() ;
+  inode->SetNthFiducialOrientation( 0 , wxyz[ 0 ] , wxyz[ 1 ] , wxyz[ 2 ] , wxyz[ 3 ] ) ;
+  inode->SetColor( fiducial->GetR() , fiducial->GetG() , fiducial->GetB() ) ;
+  inode->SetTextScale( fiducial->GetTextScale() ) ;
+  if( SetParentNode( inode , fiducial->GetParentName().c_str() , scene ) )
+  {
+    output = EXIT_FAILURE ;
+  }
+  if( !output )
+  {
+    scene->AddNode( inode ) ;
+  }
+  inode->Delete() ;
+  return output ;
+}
+
+
 int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
 {
    vtkMRMLStorageNode *snode ;
@@ -748,7 +887,7 @@ int main( int argc , const char* argv[] )
          break ;
         }
       }
-      if( !arguments[ i ]->GetType().compare( "Model" ) )
+      else if( !arguments[ i ]->GetType().compare( "Model" ) )
       {
          ModelClass *model= dynamic_cast< ModelClass*>( arguments[ i ] ) ;
          if( !model )
@@ -762,7 +901,7 @@ int main( int argc , const char* argv[] )
            break ;
         }
       }
-      if( !arguments[ i ]->GetType().compare( "Volume" ) )
+      else if( !arguments[ i ]->GetType().compare( "Volume" ) )
       {
          VolumeClass *volume = dynamic_cast< VolumeClass*>( arguments[ i ] ) ;
          if( !volume )
@@ -775,6 +914,24 @@ int main( int argc , const char* argv[] )
            output = EXIT_FAILURE ;
            break ;
         }
+      }
+      if( !arguments[ i ]->GetType().compare( "Fiducial" ) )
+      {
+        FiducialClass *fiducial = dynamic_cast< FiducialClass*>( arguments[ i ] ) ;
+        if( !fiducial )
+        {
+          std::cerr << "Problem dynamic casting FiducialClass: This should never happen!!!!" << std::endl ;
+          return EXIT_FAILURE ;
+        }
+        if( AddFiducial( fiducial , scene ) )
+        {
+          output = EXIT_FAILURE ;
+          break ;
+        }
+      }
+      else
+      {
+        std::cerr << "An error occured while writing the scene. Unexpected node found. This should never happen" << std::endl ;
       }
    }
 if( output == EXIT_SUCCESS )
