@@ -138,7 +138,7 @@ int ReadCommonSubArguments( std::string arg , std::string value , InputClass* pt
 }
 
 
-int CheckColorArgument( bool &colorCodeSet ,
+int ReadColorCodeArgument( bool &colorCodeSet ,
                         const char *argv ,
                         ColorableClass* ptr
                       )
@@ -153,7 +153,7 @@ int CheckColorArgument( bool &colorCodeSet ,
   stream.str( argv ) ;
   int nb ;
   stream >> nb ;
-  if( stream.good() )
+  if( !stream.fail() )
   {
     if( nb < ptr->GetFirstColor() || nb > ptr->GetLastColor() )
     {
@@ -174,7 +174,7 @@ int ReadColorFindValue( std::string argv , double &val )
 {
    std::istringstream stream( argv ) ;
    stream >> val ;
-   if( stream.bad() )
+   if( stream.fail() )
    {
       std::cerr << "Error: Problem reading color values" << std::endl ;
       return 1 ;
@@ -193,23 +193,36 @@ int ReadColorArgument( bool &colorSet ,
       return 1 ;
    }
    double RGB[ 3 ] ;
+   std::vector< std::string > RGBstring( 3, "" ) ;
+   std::size_t pos ;
    for( int i = 0 ; i < 2 ; i++ )
    {
-      std::size_t pos = argv.find( "," ) ;
+      pos = argv.find( "," ) ;
       if( std::string::npos != pos )
       {
-         if( ReadColorFindValue( argv.substr( 0 , pos ) , RGB[ i ] ) )
-         {
-            return 1 ;
-         }
-         argv = argv.substr( pos + 1 , argv.size() - pos - 2 ) ;
+         RGBstring[ i ] = argv.substr( 0 , pos ) ;
+         argv = argv.substr( pos + 1 , argv.size() - pos  - 1 ) ;
       }
    }
-   if( ReadColorFindValue( argv , RGB[ 2 ] ) )
+   pos = argv.find( "," ) ;
+   if( pos != std::string::npos )
    {
-      return 1 ;
+     std::cerr << "Error: Their should be only 3 values given for the colors" << std::endl ;
    }
-   return ptr->SetRGB( RGB[ 0 ] , RGB[ 1 ] , RGB[ 2 ] ) ;
+   RGBstring[ 2 ] = argv ;
+   for( int i = 0 ; i < 3 ; i++ )
+   {
+     if( ReadColorFindValue( RGBstring[ i ] , RGB[ i ] ) )
+     {
+       return 1 ;
+     }
+   }
+   if( ptr->SetRGB( RGB[ 0 ] , RGB[ 1 ] , RGB[ 2 ] ) )
+   {
+     std::cerr << "Error: Color values must be between 0.0 and 1.0" << std::endl ;
+     return 1 ;
+   }
+   return 0 ;
 }
 
 
@@ -225,9 +238,9 @@ int ReadOpacityArgument( bool &opacitySet , const char* str , ColorableClass *ob
    stream.str( str ) ;
    double val ;
    stream >> val ;
-   if( stream.bad() || object->SetOpacity( val ) )
+   if( stream.fail() || object->SetOpacity( val ) )
    { 
-      std::cerr << "Value must be between 0.0 and 1.0" << std::endl ;
+      std::cerr << "Error: Opacity value must be between 0.0 and 1.0" << std::endl ;
       return 1 ;
    }
    object->SetOpacity( val ) ;
@@ -261,7 +274,7 @@ int ReadModelSubArguments( int argc ,
       }
       if( !strcmp( argv[ pos ] , "-cc" ) )
       {
-         if( CheckColorArgument( colorCodeSet , argv[ pos + 1 ] , ptr ) )
+         if( ReadColorCodeArgument( colorCodeSet , argv[ pos + 1 ] , ptr ) )
          {
             exit = 1 ;
             break ;
@@ -392,11 +405,12 @@ int ReadVolumeSubArguments( int argc ,
       }
       if( !strcmp( argv[ pos ] , "-cc" ) )
       {
-         if( CheckColorArgument( colorCodeSet , argv[ pos + 1 ] , ptr ) )
+         if( ReadColorCodeArgument( colorCodeSet , argv[ pos + 1 ] , ptr ) )
          {
             exit = 1 ;
             break ;
          }
+         pos++ ;
       }
       else if( !strcmp( argv[ pos ] , "-op" ) )
       {
@@ -405,6 +419,7 @@ int ReadVolumeSubArguments( int argc ,
             exit = 1 ;
             break ;
          }
+         pos++ ;
       }
       else if( !strcmp( argv[ pos ] , "-dc" ) )
       {
@@ -413,6 +428,7 @@ int ReadVolumeSubArguments( int argc ,
             exit = 1 ;
             break ;
          }
+         pos++ ;
       }
       else if( !strcmp( argv[ pos ] , "-y" ) )
       {
@@ -543,7 +559,7 @@ int AddTransform( InputClass *input , vtkMRMLScene* scene )
    int output = 0 ;
    vtkMRMLTransformStorageNode* snode = vtkMRMLTransformStorageNode::New() ;
    snode->SetFileName( input->GetFileName().c_str() ) ;
-   scene->AddNodeNoNotify( snode ) ;
+   scene->AddNode( snode ) ;
 
    vtkMRMLLinearTransformNode* lnode = vtkMRMLLinearTransformNode::New() ;
    lnode->SetName( input->GetNodeName().c_str() ) ;
@@ -580,7 +596,6 @@ int AddColorable( ColorableClass* colorable ,
    dnode->SetColor( colorRGB ) ;
    if( !strcmp( colorable->GetColorString() , "" ) )
    {
-      std::cout << "plop" <<std::endl ;
      dnode->SetAndObserveColorNodeID( colorable->GetColor() ) ;
    }
    else
@@ -588,6 +603,8 @@ int AddColorable( ColorableClass* colorable ,
       vtkMRMLColorTableStorageNode *ctsnode = vtkMRMLColorTableStorageNode::New() ;
       ctsnode->SetFileName( colorable->GetColorString() ) ;
       vtkMRMLColorTableNode *ctnode = vtkMRMLColorTableNode::New() ;
+      scene->AddNode( ctsnode ) ;
+      scene->AddNode( ctnode ) ;
       ctnode->SetAndObserveStorageNodeID( ctsnode->GetID() ) ;
       dnode->SetAndObserveColorNodeID( ctnode->GetID() ) ;
       ctnode->Delete() ;
