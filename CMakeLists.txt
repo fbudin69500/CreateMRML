@@ -4,6 +4,7 @@ project (CreateMRML)
 set(CreateMRML_SOURCE
  CreateMRML.cxx
  ColorableClass.h
+ ColorableClass.cxx
  FiducialClass.cxx
  FiducialClass.h
  InputClass.h
