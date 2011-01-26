@@ -243,7 +243,6 @@ int ReadOpacityArgument( bool &opacitySet , const char* str , ColorableClass *ob
       std::cerr << "Error: Opacity value must be between 0.0 and 1.0" << std::endl ;
       return 1 ;
    }
-   object->SetOpacity( val ) ;
    return 0 ;
 }
 
