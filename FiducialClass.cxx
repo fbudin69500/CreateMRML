@@ -12,6 +12,10 @@ FiducialClass::FiducialClass()
   m_Selected = true ;
   m_Visible = true ;
   m_TextScale = 6.0 ;
+<<<<<<< HEAD
+=======
+  m_RGB.resize( 3 , .5 ) ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 }
 
 void  FiducialClass::SetTextScale( double scale )
@@ -33,7 +37,11 @@ void FiducialClass::Print()
 {
   ColorableClass::Print() ;
   std::cout << "Id: "<< m_Id << std::endl ;
+<<<<<<< HEAD
   std::string m_Label << std::endl ;
+=======
+  std::cout << "Label: " << m_Label << std::endl ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
   std::cout <<  "Position: " << m_X << " " <<  m_Y << " " << m_Z << std::endl ;
   std::cout <<  "Orientation: " << m_oW << " " << m_oX << " " <<  m_oY << " " <<  m_oZ << std::endl ;
   std::cout <<  "Is Selected: " << m_Selected << std::endl ;
@@ -60,14 +68,22 @@ std::string FiducialClass::GetLabel()
   return m_Label ;
 }
 
+<<<<<<< HEAD
 void FiducialClass::Setxyz( float x , float y , float z )
+=======
+void FiducialClass::SetPosition( float x , float y , float z )
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 {
   m_X = x ;
   m_Y = y ;
   m_Z = z ;
 }
 
+<<<<<<< HEAD
 std::vector< float > FiducialClass::Getxyz()
+=======
+std::vector< float > FiducialClass::GetPosition()
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 {
   std::vector< float > xyz( 3 ) ;
   xyz[ 0 ] = m_X ;
@@ -84,7 +100,11 @@ void FiducialClass::SetOrientation( float w , float x , float y , float z )
   m_oZ = z ;
 }
 
+<<<<<<< HEAD
 std::vector< float > GetOrientation()
+=======
+std::vector< float > FiducialClass::GetOrientation()
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 {
   std::vector< float > wxyz( 4 ) ;
   wxyz[ 0 ] = m_oW ;
@@ -111,5 +131,31 @@ void FiducialClass::Visibility( bool visible )
 
 bool FiducialClass::IsVisible()
 {
+<<<<<<< HEAD
   return m_Visible ;  
 }
+=======
+  return m_Visible ;
+}
+
+int FiducialClass::SetSelectedColor( float R , float G , float B )
+{
+   int error1 , error2 , error3 ;
+   CORRECTVALUEMACRO( R , error1 ) ;
+   CORRECTVALUEMACRO( G , error2 ) ;
+   CORRECTVALUEMACRO( R , error3 ) ;
+   if( error1 || error2 || error3 )
+   {
+      return 1 ;
+   }
+   m_RGB[ 0 ] = R ;
+   m_RGB[ 1 ] = G ;
+   m_RGB[ 2 ] = B ;
+   return 0 ;
+}
+  
+std::vector< float > FiducialClass::GetSelectedColor()
+{
+   return m_RGB ;
+}
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5

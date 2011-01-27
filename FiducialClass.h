@@ -2,6 +2,10 @@
 #define _FiducialClass_h
 
 #include "ColorableClass.h"
+<<<<<<< HEAD
+=======
+#include <vector>
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 
 class FiducialClass : public ColorableClass
 {
@@ -14,10 +18,19 @@ public:
   std::string GetId() ;
   void SetLabelText( std::string ) ;
   std::string GetLabel() ;
+<<<<<<< HEAD
   void Setxyz( float , float , float ) ;
   std::vector< float > Getxyz() ;
   void SetOrientation( float , float , float , float ) ;
   std::vector< float > GetOrientation() ;
+=======
+  void SetPosition( float , float , float ) ;
+  std::vector< float > GetPosition() ;
+  void SetOrientation( float , float , float , float ) ;
+  std::vector< float > GetOrientation() ;
+  int SetSelectedColor( float , float , float ) ;
+  std::vector< float > GetSelectedColor() ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
   void Selected( bool ) ;
   bool IsSelected() ;
   void Visibility( bool ) ;
@@ -32,6 +45,13 @@ private:
   bool m_Selected ;
   bool m_Visible ;
   double m_TextScale ;
+<<<<<<< HEAD
 };
 
 #endif
+=======
+  std::vector< float > m_RGB ;
+};
+
+#endif
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5

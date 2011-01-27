@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include <vtkMRMLScene.h>
 #include <vtkMRMLLinearTransformNode.h>
 #include <vtkMRMLTransformStorageNode.h>
@@ -20,6 +21,9 @@
 #include <vtkMRMLFiducialListNode.h>
 
 
+=======
+#include "CreateMRMLScene.h"
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 #include "ModelClass.h"
 #include "TransformClass.h"
 #include "VolumeClass.h"
@@ -78,21 +82,32 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-p ParentNodeName (default: no parent)" << std::endl ;
    std::cout << "-n NodeName (default: name of the file stripped from extension and directory)" << std::endl ;
    std::cout << std::endl ;
-   std::cout << "If node is a volume or a model:" << std::endl ;
-   std::cout << "-cc ColorCode (default: 1 [grey])" << std::endl ;
+   std::cout << "If node is a volume, a fiducial or a model:" << std::endl ;
    std::cout << "-op Opacity (default: 1)" << std::endl ;
    std::cout << "-dc r,g,b (default: 0.5,0.5,0.5)" << std::endl ;
+   std::cout << std::endl ;
+   std::cout << "If node is a volume or a model:" << std::endl ;
+   std::cout << "-cc ColorCode (default: 1 [grey])" << std::endl ;
    std::cout << std::endl ;
    std::cout << "If node is a volume:" << std::endl ;
    std::cout << "-y VolumeType (default: scalar)" << std::endl ;
    std::cout << "-l: Label map (only for scalar volumes)" << std::endl ;
    std::cout << std::endl ;
    std::cout << "If node is a fiducial:" << std::endl ;
+<<<<<<< HEAD
    std::cout << "-id fiducialID" << std::endl ;
    std::cout << "-lbl label" << std::endl ;
    std::cout << "-pos x,y,z (position)" << std::endl ;
    std::cout << "-o w,x,y,z (orientation)" << std::endl ;
    std::cout << "-sc textScale" << std::endl ;
+=======
+   std::cout << "-id fiducialID (compulsory!)" << std::endl ;
+   std::cout << "-lbl label" << std::endl ;
+   std::cout << "-pos x,y,z (position)" << std::endl ;
+   std::cout << "-o w,x,y,z (orientation)" << std::endl ;
+   std::cout << "-ts textScale" << std::endl ;
+   std::cout << "-sc r,g,b (SelectedColor)" << std::endl ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
    std::cout << std::endl ;
    std::cout << "Color Table:" << std::endl ;
    VolumeClass volume ;
@@ -184,15 +199,98 @@ int ReadColorCodeArgument( bool &colorCodeSet ,
   return 0 ;
 }
 
-int ReadColorFindValue( std::string argv , double &val )
+int ReadValue( std::string argv , double &val , const char* text )
 {
    std::istringstream stream( argv ) ;
    stream >> val ;
    if( stream.fail() )
    {
-      std::cerr << "Error: Problem reading color values" << std::endl ;
+      std::cerr << "Error: Problem reading "<< text <<" values" << std::endl ;
       return 1 ;
    }
+   return 0 ;
+}
+
+
+int ReadVectors( std::string argv , std::vector< double > &vec , unsigned int size , const char* text)
+{
+//   double RGB[ 3 ] ;
+   vec.resize( size ) ;
+   std::vector< std::string > RGBstring( size , "" ) ;
+   std::size_t pos ;
+   for( unsigned int i = 0 ; i < size - 1 ; i++ )
+   {
+      pos = argv.find( "," ) ;
+      if( std::string::npos != pos )
+      {
+         RGBstring[ i ] = argv.substr( 0 , pos ) ;
+         argv = argv.substr( pos + 1 , argv.size() - pos  - 1 ) ;
+      }
+   }
+   pos = argv.find( "," ) ;
+   if( pos != std::string::npos )
+   {
+      std::cerr << "Error: Their should be only "<< size <<" values given for "<< text << std::endl ;
+   }
+   RGBstring[ size - 1 ] = argv ;
+   for( unsigned int i = 0 ; i < size ; i++ )
+   {
+      if( ReadValue( RGBstring[ i ] , vec[ i ] , text ) )
+      {
+         return 1 ;
+      }
+   }
+   return 0 ;
+}
+
+int ReadPositionArgument( bool &positionSet , std::string argv , FiducialClass* ptr )
+{
+   if( positionSet )
+   {
+      std::cerr << "Error: Multiple positions given for one object" << std::endl ;
+      return 1 ;
+   }
+   std::vector< double > position ;
+   if( ReadVectors( argv , position , 3 , "position" ) )
+   {
+      return 1 ;
+   }
+   ptr->SetPosition( position[ 0 ] , position[ 1 ] , position[ 2 ] ) ;
+   positionSet = true ;
+   return 0 ;
+}
+
+int ReadSelectedColorArgument( bool &colorSet , std::string argv , FiducialClass* ptr )
+{
+   if( colorSet )
+   {
+      std::cerr << "Error: Multiple colors given for one object" << std::endl ;
+      return 1 ;
+   }
+   std::vector< double > color ;
+   if( ReadVectors( argv , color , 3 , "selected color" ) )
+   {
+      return 1 ;
+   }
+   ptr->SetSelectedColor( color[ 0 ] , color[ 1 ] , color[ 2 ] ) ;
+   colorSet = true ;
+   return 0 ;
+}
+
+int ReadOrientationArgument( bool &orientationSet , std::string argv , FiducialClass* ptr )
+{
+   if( orientationSet )
+   {
+      std::cerr << "Error: Multiple orientations given for one object" << std::endl ;
+      return 1 ;
+   }
+   std::vector< double > orientation ;
+   if( ReadVectors( argv , orientation , 4 , "orientation" ) )
+   {
+      return 1 ;
+   }
+   ptr->SetOrientation( orientation[ 0 ] , orientation[ 1 ] , orientation[ 2 ] , orientation[ 3 ] ) ;
+   orientationSet = true ;
    return 0 ;
 }
 
@@ -206,36 +304,17 @@ int ReadColorArgument( bool &colorSet ,
       std::cerr << "Error: Multiple colors given for one object" << std::endl ;
       return 1 ;
    }
-   double RGB[ 3 ] ;
-   std::vector< std::string > RGBstring( 3, "" ) ;
-   std::size_t pos ;
-   for( int i = 0 ; i < 2 ; i++ )
+   std::vector< double > RGB ;
+   if( ReadVectors( argv , RGB , 3 , "color" ) )
    {
-      pos = argv.find( "," ) ;
-      if( std::string::npos != pos )
-      {
-         RGBstring[ i ] = argv.substr( 0 , pos ) ;
-         argv = argv.substr( pos + 1 , argv.size() - pos  - 1 ) ;
-      }
+      return 1 ;
    }
-   pos = argv.find( "," ) ;
-   if( pos != std::string::npos )
-   {
-     std::cerr << "Error: Their should be only 3 values given for the colors" << std::endl ;
-   }
-   RGBstring[ 2 ] = argv ;
-   for( int i = 0 ; i < 3 ; i++ )
-   {
-     if( ReadColorFindValue( RGBstring[ i ] , RGB[ i ] ) )
-     {
-       return 1 ;
-     }
-   }
-   if( ptr->SetRGB( RGB[ 0 ] , RGB[ 1 ] , RGB[ 2 ] ) )
+   if( ptr->SetRGB( (float)RGB[ 0 ] , (float)RGB[ 1 ] , (float)RGB[ 2 ] ) )
    {
      std::cerr << "Error: Color values must be between 0.0 and 1.0" << std::endl ;
      return 1 ;
    }
+   colorSet = true ;
    return 0 ;
 }
 
@@ -340,6 +419,7 @@ int ReadFiducialSubArguments( int argc ,
 )
 {
   FiducialClass* fiducial = new FiducialClass ;
+<<<<<<< HEAD
   "-id fiducialID"
   "-lbl label"
   "-pos x,y,z (position)"
@@ -355,6 +435,21 @@ int ReadFiducialSubArguments( int argc ,
   {
     pos++ ;
     exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , ptr ) ;
+=======
+  int exit = 0 ;
+  bool idSet = false ;
+  bool labelSet = false ;
+  bool positionSet = false ;
+  bool orientationSet = false ;
+  bool colorSet = false ;
+  bool opacitySet = false ;
+  bool scaleSet = false ;
+  bool selectedColorSet = false ;
+  while( pos < argc - 2 )
+  {
+    pos++ ;
+    exit = ReadCommonSubArguments( argv[ pos ] , argv[ pos + 1 ] , fiducial ) ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
     if( exit > 0 )
     {
       break ;
@@ -368,10 +463,18 @@ int ReadFiducialSubArguments( int argc ,
     {
       if( idSet )
       {
+<<<<<<< HEAD
         exit = 1 ;
         break ;
       }
       ptr->SetId( argv[ pos + 1 ] ) ;
+=======
+        std::cerr << "Error: Multiple Ids given for one fiducial" << std::endl ;
+        exit = 1 ;
+        break ;
+      }
+      fiducial->SetId( argv[ pos + 1 ] ) ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
       idSet = true ;
       pos++ ;
     }
@@ -379,6 +482,7 @@ int ReadFiducialSubArguments( int argc ,
     {
       if( labelSet )
       {
+<<<<<<< HEAD
         exit = 1 ;
         break ;
       }
@@ -389,12 +493,82 @@ int ReadFiducialSubArguments( int argc ,
     else if( !strcmp( argv[ pos ] , "-dc" ) )
     {
       if( ReadColorArgument( colorSet , argv[ pos + 1 ] , ptr ) )
+=======
+        std::cerr << "Error: Multiple labels given for one fiducial" << std::endl ;
+        exit = 1 ;
+        break ;
+      }
+      fiducial->SetLabelText( argv[ pos + 1 ] ) ;
+      labelSet = true ;
+      pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-pos" ) )
+    {
+      if( ReadPositionArgument( positionSet , argv[ pos + 1 ] , fiducial ) )
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
       {
         exit = 1 ;
         break ;
       }
       pos++ ;
     }
+<<<<<<< HEAD
+=======
+    else if( !strcmp( argv[ pos ] , "-sc" ) )
+    {
+       if( ReadSelectedColorArgument( selectedColorSet , argv[ pos + 1 ] , fiducial ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-op" ) )
+    {
+       if( ReadOpacityArgument( opacitySet , argv[ pos + 1 ] , fiducial ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-dc" ) )
+    {
+       if( ReadColorArgument( colorSet , argv[ pos + 1 ] , fiducial ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-o" ) )
+    {
+       if( ReadOrientationArgument( orientationSet , argv[ pos + 1 ] , fiducial ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-ts" ) )
+    {
+       if( scaleSet )
+       {
+          std::cerr << "Error: Multiple scales given for one fiducial" << std::endl ;
+          exit = 1 ;
+          break ;
+       }
+       double scale ;
+       if( ReadValue( argv[ pos + 1 ] , scale , "scale value" ) )
+       {
+          exit = 1 ;
+          break ;
+       }
+       fiducial->SetTextScale( scale ) ;
+       scaleSet = true ;
+       pos++ ;
+    }
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
     else
     {
       std::cerr << "Error: No attributes found for one object" << std::endl ;
@@ -404,18 +578,39 @@ int ReadFiducialSubArguments( int argc ,
   }
   if( exit == 1 )
   {
+<<<<<<< HEAD
     delete ptr ;
     return 1 ;
   }
   if( ptr->GetFileName().compare( "" ) )
   {
     std::cerr << "Error: No file name should be give for a fiducial" << std::endl ;
+=======
+    delete fiducial ;
+    return 1 ;
+  }
+  if( fiducial->GetFileName().compare( "" ) )
+  {
+    std::cerr << "Error: No file name should be given to a fiducial" << std::endl ;
+    delete fiducial ;
+    return 1 ;
+  }
+  if( !idSet )
+  {
+     std::cerr << "Error: An id should be given to a fiducial" << std::endl ;
+     delete fiducial ;
+     return 1 ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
   }
   if( exit == 2 )
   {
     pos-- ;
   }
+<<<<<<< HEAD
   arguments.push_back( ptr ) ;
+=======
+  arguments.push_back( fiducial ) ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
   return 0 ;
 }
 
@@ -481,7 +676,7 @@ int ReadVolumeSubArguments( int argc ,
       {
         if( labelSet )
         {
-          std::cerr << "Error: label flag given mutliple times for one object" << std::endl ;
+          std::cerr << "Error: label map flag given mutliple times for one object" << std::endl ;
           exit = 1 ;
           break ;
         }
@@ -534,7 +729,7 @@ int ReadVolumeSubArguments( int argc ,
       {
          if( typeSet )
          {
-           std::cerr << "Error: Multiple types given for one object" << std::endl ;
+            std::cerr << "Error: Multiple types given for one object" << std::endl ;
             exit = 1 ;
             break ;
          }
@@ -626,7 +821,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
       else if( !strcmp( argv[ i ] , "-h" ) )
       {
          PrintHelp( argv[ 0 ] , 1 ) ;
-         return 0 ;
+         return -1 ;
       }
       else
       {
@@ -638,113 +833,13 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
 }
 
 
-int SetParentNode( vtkMRMLTransformableNode *child , const char* parentName , vtkMRMLScene* scene )
-{
-  if( !strcmp( parentName , "" ) )
-  {
-    return 0 ;
-  }
-  vtkMRMLNode* node = NULL ;
-  //     vtkMRMLNode* node = scene->GetNodeByID( input->GetParentName() ) ;
-  for( int i = 0 ; i < scene->GetNumberOfNodes() ; i++ )
-  {
-    vtkMRMLNode* tempnode = scene->GetNthNode( i) ;
-    if( !strcmp( tempnode->GetName() , parentName ) )
-    {
-      node = tempnode ;
-    }
-  }
-  if( !node )
-  {
-    std::cerr << "Parent node does not exist. Set parent before child" << std::endl ;
-    return 1 ;
-  }
-  child->SetAndObserveTransformNodeID( node->GetID() ) ;
-  return 0 ;
-}
-
-int AddTransform( InputClass *input , vtkMRMLScene* scene )
-{
-   int output = 0 ;
-   vtkMRMLTransformStorageNode* snode = vtkMRMLTransformStorageNode::New() ;
-   snode->SetFileName( input->GetFileName().c_str() ) ;
-   scene->AddNode( snode ) ;
-
-   vtkMRMLLinearTransformNode* lnode = vtkMRMLLinearTransformNode::New() ;
-   lnode->SetName( input->GetNodeName().c_str() ) ;
-   lnode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-   if( SetParentNode( lnode ,  input->GetParentName().c_str() , scene ) )
-   {
-     output = 1 ;
-   }
-   if( !output )
-   {
-     scene->AddNode( lnode ) ;
-   }
-   snode->Delete() ;
-   lnode->Delete() ;
-   return  output ;
-}
 
 
-int AddColorable( ColorableClass* colorable ,
-                  vtkMRMLDisplayNode* dnode ,
-                  vtkMRMLStorageNode* snode ,
-                  vtkMRMLDisplayableNode* inode ,
-                  vtkMRMLScene* scene
-                )
-{
-   int output = EXIT_SUCCESS ;
-   snode->SetFileName( colorable->GetFileName().c_str() ) ;
-   scene->AddNode( snode ) ;
-   dnode->SetOpacity( colorable->GetOpacity() ) ;
-   double colorRGB[ 3 ] ;
-   colorRGB[ 0 ] = colorable->GetR() ;
-   colorRGB[ 1 ] = colorable->GetG() ;
-   colorRGB[ 2 ] = colorable->GetB() ;
-   dnode->SetColor( colorRGB ) ;
-   if( !strcmp( colorable->GetColorString() , "" ) )
-   {
-     dnode->SetAndObserveColorNodeID( colorable->GetColor() ) ;
-   }
-   else
-   {
-      vtkMRMLColorTableStorageNode *ctsnode = vtkMRMLColorTableStorageNode::New() ;
-      ctsnode->SetFileName( colorable->GetColorString() ) ;
-      vtkMRMLColorTableNode *ctnode = vtkMRMLColorTableNode::New() ;
-      scene->AddNode( ctsnode ) ;
-      scene->AddNode( ctnode ) ;
-      ctnode->SetAndObserveStorageNodeID( ctsnode->GetID() ) ;
-      dnode->SetAndObserveColorNodeID( ctnode->GetID() ) ;
-      ctnode->Delete() ;
-      ctsnode->Delete() ;
-   }
-   scene->AddNode( dnode ) ;
-   inode->SetName( colorable->GetNodeName().c_str() ) ;
-   inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
-   inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
-   if( SetParentNode( inode , colorable->GetParentName().c_str() , scene ) )
-   {
-      output = EXIT_FAILURE ;
-   }
-   if( !output )
-   {
-      scene->AddNode( inode ) ;
-   }
-   inode->Delete() ;
-   dnode->Delete() ;
-   snode->Delete() ;
-   return output ;
-}
 
-int AddModel( ModelClass *model , vtkMRMLScene* scene )
-{
-   vtkMRMLModelStorageNode *snode = vtkMRMLModelStorageNode::New() ;
-   vtkMRMLModelDisplayNode *dnode = vtkMRMLModelDisplayNode::New() ;
-   vtkMRMLModelNode *inode = vtkMRMLModelNode::New() ;
-   return AddColorable( model , dnode , snode , inode , scene ) ;
-}
 
+
+
+<<<<<<< HEAD
 int AddFiducial( FiducialClass *fiducial , vtkMRMLScene* scene )
 {
   bool output = EXIT_SUCCESS ;
@@ -815,6 +910,15 @@ int AddVolume( VolumeClass *volume , vtkMRMLScene* scene )
    }
    return AddColorable( volume , dnode , snode , inode , scene ) ;
 }
+=======
+
+
+
+
+
+
+
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 
 void CheckNodeName( std::vector< InputClass* > &arguments )
 {
@@ -840,24 +944,17 @@ void CheckNodeName( std::vector< InputClass* > &arguments )
    }
 }
 
-//Check that each node name is unique
-int CheckDoublons( std::vector< InputClass* > arguments )
+void DeleteArguments( std::vector< InputClass* > arguments )
 {
-   for( unsigned int i = 0 ; i < arguments.size() - 1 ; i++ )
+   for( unsigned int i = 0 ; i < arguments.size() ; i++ )
    {
-     for( unsigned int j = i + 1 ; j < arguments.size() ; j++ )
-      {
-        if( !arguments[ i ]->GetNodeName().compare( arguments[ j ]->GetNodeName() ) )
-         {
-            return 1 ;
-         }
-      }
+      delete arguments[ i ] ;
    }
-   return 0 ;
 }
 
 int main( int argc , const char* argv[] )
 {
+<<<<<<< HEAD
   int output = EXIT_SUCCESS ;
    std::vector< InputClass* > arguments ;
    if( ReadArguments( argc , argv , arguments ) )
@@ -945,4 +1042,27 @@ if( output == EXIT_SUCCESS )
     delete arguments[ i ] ;
  }
  return output ;
+=======
+  int output ;
+  std::vector< InputClass* > arguments ;
+  output = ReadArguments( argc , argv , arguments ) ;
+  if( output > 0 )
+  {
+    DeleteArguments( arguments ) ;
+    return EXIT_FAILURE ;
+  }
+  else if( output < 0 )
+  {
+    DeleteArguments( arguments ) ;
+    return EXIT_SUCCESS ;
+  }
+  output = EXIT_SUCCESS ;
+  CheckNodeName( arguments ) ;
+  CreateMRMLScene MRMLCreator ;
+  MRMLCreator.SetSceneName( argv[ 1 ] ) ;
+  MRMLCreator.SetInputs( arguments ) ;
+  output = MRMLCreator.Write() ;
+  DeleteArguments( arguments ) ;
+  return output ;
+>>>>>>> 047ae97edf0c9f7fd8f705ae8fe83b5dcf0487e5
 }
