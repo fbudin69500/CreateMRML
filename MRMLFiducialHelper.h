@@ -1,8 +1,10 @@
 #ifndef _MRMLFiducialHelper_h
 #define _MRMLFiducialHelper_h
 
+
 #include "MRMLColorableHelper.h"
 #include <vector>
+
 
 class MRMLFiducialHelper : public MRMLColorableHelper
 {
@@ -39,3 +41,4 @@ private:
 };
 
 #endif
+

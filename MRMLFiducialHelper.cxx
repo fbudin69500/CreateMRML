@@ -61,12 +61,14 @@ std::string MRMLFiducialHelper::GetLabel()
   return m_Label ;
 }
 
+
 void MRMLFiducialHelper::SetPosition( float x , float y , float z )
 {
   m_X = x ;
   m_Y = y ;
   m_Z = z ;
 }
+
 
 std::vector< float > MRMLFiducialHelper::GetPosition()
 {
@@ -84,6 +86,7 @@ void MRMLFiducialHelper::SetOrientation( float w , float x , float y , float z )
   m_oY = y ;
   m_oZ = z ;
 }
+
 
 std::vector< float > MRMLFiducialHelper::GetOrientation()
 {
@@ -135,3 +138,4 @@ std::vector< float > MRMLFiducialHelper::GetSelectedColor()
 {
    return m_RGB ;
 }
+

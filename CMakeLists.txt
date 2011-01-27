@@ -13,6 +13,8 @@ set(CreateMRML_SOURCE
  MRMLVolumeHelper.h
  CreateMRMLSceneHelper.h
  CreateMRMLSceneHelper.cxx
+ MagicParser.h
+ MagicParser.cxx
 )
 
   find_package(Slicer3 REQUIRED)

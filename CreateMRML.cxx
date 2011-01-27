@@ -3,6 +3,7 @@
 #include "MRMLTransformHelper.h"
 #include "MRMLVolumeHelper.h"
 #include "MRMLFiducialHelper.h"
+
 #include <vector>
 #include <string.h>
 /*
@@ -518,6 +519,7 @@ int ReadFiducialSubArguments( int argc ,
      std::cerr << "Error: An id should be given to a fiducial" << std::endl ;
      delete fiducial ;
      return 1 ;
+
   }
   if( exit == 2 )
   {
@@ -744,20 +746,6 @@ int ReadArguments( int argc , const char *argv[] , std::vector< MRMLNodeHelper* 
    }
    return 0 ;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 void CheckNodeName( std::vector< MRMLNodeHelper* > &arguments )
