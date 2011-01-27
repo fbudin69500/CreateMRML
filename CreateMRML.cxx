@@ -1,8 +1,8 @@
-#include "CreateMRMLScene.h"
-#include "ModelClass.h"
-#include "TransformClass.h"
-#include "VolumeClass.h"
-#include "FiducialClass.h"
+#include "CreateMRMLSceneHelper.h"
+#include "MRMLModelHelper.h"
+#include "MRMLTransformHelper.h"
+#include "MRMLVolumeHelper.h"
+#include "MRMLFiducialHelper.h"
 #include <vector>
 #include <string.h>
 /*
@@ -77,7 +77,7 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-sc r,g,b (SelectedColor)" << std::endl ;
    std::cout << std::endl ;
    std::cout << "Color Table:" << std::endl ;
-   VolumeClass volume ;
+   MRMLVolumeHelper volume ;
    volume.PrintColors() ;
    std::cout << std::endl ;
    std::cout << "Volume types:" << std::endl ;
@@ -85,7 +85,7 @@ void PrintHelp( const char* arg0 , bool extended )
 }
 
 
-int ReadCommonSubArguments( std::string arg , std::string value , InputClass* ptr )
+int ReadCommonSubArguments( std::string arg , std::string value , MRMLNodeHelper* ptr )
 {
    if( !arg.compare("-f") )
    {
@@ -136,7 +136,7 @@ int ReadCommonSubArguments( std::string arg , std::string value , InputClass* pt
 
 int ReadColorCodeArgument( bool &colorCodeSet ,
                         const char *argv ,
-                        ColorableClass* ptr
+                        MRMLColorableHelper* ptr
                       )
 {
   if( colorCodeSet )
@@ -210,7 +210,7 @@ int ReadVectors( std::string argv , std::vector< double > &vec , unsigned int si
    return 0 ;
 }
 
-int ReadPositionArgument( bool &positionSet , std::string argv , FiducialClass* ptr )
+int ReadPositionArgument( bool &positionSet , std::string argv , MRMLFiducialHelper* ptr )
 {
    if( positionSet )
    {
@@ -227,7 +227,7 @@ int ReadPositionArgument( bool &positionSet , std::string argv , FiducialClass* 
    return 0 ;
 }
 
-int ReadSelectedColorArgument( bool &colorSet , std::string argv , FiducialClass* ptr )
+int ReadSelectedColorArgument( bool &colorSet , std::string argv , MRMLFiducialHelper* ptr )
 {
    if( colorSet )
    {
@@ -244,7 +244,7 @@ int ReadSelectedColorArgument( bool &colorSet , std::string argv , FiducialClass
    return 0 ;
 }
 
-int ReadOrientationArgument( bool &orientationSet , std::string argv , FiducialClass* ptr )
+int ReadOrientationArgument( bool &orientationSet , std::string argv , MRMLFiducialHelper* ptr )
 {
    if( orientationSet )
    {
@@ -263,7 +263,7 @@ int ReadOrientationArgument( bool &orientationSet , std::string argv , FiducialC
 
 int ReadColorArgument( bool &colorSet ,
                        std::string argv ,
-                       ColorableClass* ptr
+                       MRMLColorableHelper* ptr
                      )
 {
    if( colorSet )
@@ -286,7 +286,7 @@ int ReadColorArgument( bool &colorSet ,
 }
 
 
-int ReadOpacityArgument( bool &opacitySet , const char* str , ColorableClass *object )
+int ReadOpacityArgument( bool &opacitySet , const char* str , MRMLColorableHelper *object )
 {
    if( opacitySet )
    {
@@ -310,10 +310,10 @@ int ReadOpacityArgument( bool &opacitySet , const char* str , ColorableClass *ob
 int ReadModelSubArguments( int argc ,
                            const char *argv[] ,
                            int &pos ,
-                           std::vector< InputClass* > &arguments
+                           std::vector< MRMLNodeHelper* > &arguments
                          )
 {
-   ModelClass* ptr = new ModelClass ;
+   MRMLModelHelper* ptr = new MRMLModelHelper ;
    int exit = 0 ;
    bool colorCodeSet = false ;
    bool colorSet = false ;
@@ -382,10 +382,10 @@ int ReadModelSubArguments( int argc ,
 int ReadFiducialSubArguments( int argc ,
                               const char *argv[] ,
                               int &pos ,
-                              std::vector< InputClass* > &arguments
+                              std::vector< MRMLNodeHelper* > &arguments
 )
 {
-  FiducialClass* fiducial = new FiducialClass ;
+  MRMLFiducialHelper* fiducial = new MRMLFiducialHelper ;
   int exit = 0 ;
   bool idSet = false ;
   bool labelSet = false ;
@@ -530,10 +530,10 @@ int ReadFiducialSubArguments( int argc ,
 int ReadTransformSubArguments( int argc ,
                            const char *argv[] ,
                            int &pos ,
-                           std::vector< InputClass* > &arguments
+                           std::vector< MRMLNodeHelper* > &arguments
                          )
 {
-   TransformClass* ptr = new TransformClass ;
+   MRMLTransformHelper* ptr = new MRMLTransformHelper ;
    int exit = 0 ;
    while( pos < argc - 2 )
    {
@@ -572,10 +572,10 @@ int ReadTransformSubArguments( int argc ,
 int ReadVolumeSubArguments( int argc ,
                             const char *argv[] ,
                             int &pos ,
-                            std::vector< InputClass* > &arguments
+                            std::vector< MRMLNodeHelper* > &arguments
                           )
 {
-   VolumeClass* ptr = new VolumeClass ;
+   MRMLVolumeHelper* ptr = new MRMLVolumeHelper ;
    bool colorCodeSet = false ;
    bool colorSet = false ;
    bool typeSet = false ;
@@ -675,7 +675,7 @@ int ReadVolumeSubArguments( int argc ,
    return 0 ;
 }
 
-int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &arguments )
+int ReadArguments( int argc , const char *argv[] , std::vector< MRMLNodeHelper* > &arguments )
 {
    if( argc < 2 )
    {
@@ -760,7 +760,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< InputClass* > &a
 
 
 
-void CheckNodeName( std::vector< InputClass* > &arguments )
+void CheckNodeName( std::vector< MRMLNodeHelper* > &arguments )
 {
    for( unsigned int i = 0 ; i < arguments.size() ; i++ )
    {
@@ -784,7 +784,7 @@ void CheckNodeName( std::vector< InputClass* > &arguments )
    }
 }
 
-void DeleteArguments( std::vector< InputClass* > arguments )
+void DeleteArguments( std::vector< MRMLNodeHelper* > arguments )
 {
    for( unsigned int i = 0 ; i < arguments.size() ; i++ )
    {
@@ -795,7 +795,7 @@ void DeleteArguments( std::vector< InputClass* > arguments )
 int main( int argc , const char* argv[] )
 {
   int output ;
-  std::vector< InputClass* > arguments ;
+  std::vector< MRMLNodeHelper* > arguments ;
   output = ReadArguments( argc , argv , arguments ) ;
   if( output > 0 )
   {
@@ -809,7 +809,7 @@ int main( int argc , const char* argv[] )
   }
   output = EXIT_SUCCESS ;
   CheckNodeName( arguments ) ;
-  CreateMRMLScene MRMLCreator ;
+  CreateMRMLSceneHelper MRMLCreator ;
   MRMLCreator.SetSceneName( argv[ 1 ] ) ;
   MRMLCreator.SetInputs( arguments ) ;
   output = MRMLCreator.Write() ;

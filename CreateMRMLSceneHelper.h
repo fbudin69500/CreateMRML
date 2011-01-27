@@ -1,5 +1,5 @@
-#ifndef _CreateMRMLScene_h
-#define _CreateMRMLScene_h
+#ifndef _CreateMRMLSceneHelper_h
+#define _CreateMRMLSceneHelper_h
 
 #include <vtkMRMLScene.h>
 #include <vtkMRMLLinearTransformNode.h>
@@ -22,38 +22,37 @@
 #include <vtkMRMLFiducialListStorageNode.h>
 #include <vtkMRMLFiducialListNode.h>
 
-#include "CreateMRMLScene.h"
-#include "ModelClass.h"
-#include "TransformClass.h"
-#include "VolumeClass.h"
-#include "FiducialClass.h"
+#include "MRMLModelHelper.h"
+#include "MRMLTransformHelper.h"
+#include "MRMLVolumeHelper.h"
+#include "MRMLFiducialHelper.h"
 #include <vector>
 #include <string>
 
-class CreateMRMLScene
+class CreateMRMLSceneHelper
 {
    public:
-      CreateMRMLScene() ;
-      ~CreateMRMLScene() ;
+      CreateMRMLSceneHelper() ;
+      ~CreateMRMLSceneHelper() ;
       void SetSceneName( std::string name ) ;
       int Write() ;
-      void SetInputs( std::vector< InputClass* > arg ) ;
+      void SetInputs( std::vector< MRMLNodeHelper* > arg ) ;
 //      void AddInput( InputClass* arg ) ;
    private:
       std::string m_SceneName ;
-      std::vector< InputClass* > m_Arguments ;
+      std::vector< MRMLNodeHelper* > m_Arguments ;
       vtkMRMLScene* m_Scene ;
       int CheckDoublons( ) ;
-      int AddVolume( VolumeClass *volume ) ;
+      int AddVolume( MRMLVolumeHelper *volume ) ;
       int SetParentNode( vtkMRMLTransformableNode *child , const char* parentName ) ;
-      int AddTransform( InputClass *input ) ;
-      int AddColorable( ColorableClass* colorable ,
+      int AddTransform( MRMLNodeHelper *input ) ;
+      int AddColorable( MRMLColorableHelper* colorable ,
                         vtkMRMLDisplayNode* dnode ,
                         vtkMRMLStorageNode* snode ,
                         vtkMRMLDisplayableNode* inode
                       ) ;
-      int AddModel( ModelClass *model ) ;
-      int AddFiducial( FiducialClass *fiducial ) ;
+      int AddModel( MRMLModelHelper *model ) ;
+      int AddFiducial( MRMLFiducialHelper *fiducial ) ;
 };
 
 #endif

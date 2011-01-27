@@ -1,26 +1,26 @@
-#include "CreateMRMLScene.h"
+#include "CreateMRMLSceneHelper.h"
 
-CreateMRMLScene::CreateMRMLScene()
+CreateMRMLSceneHelper::CreateMRMLSceneHelper()
 {
    m_Scene = vtkMRMLScene::New() ;
 }
 
-CreateMRMLScene::~CreateMRMLScene()
+CreateMRMLSceneHelper::~CreateMRMLSceneHelper()
 {
    m_Scene->Delete() ;
 }
 
-void CreateMRMLScene::SetSceneName( std::string name )
+void CreateMRMLSceneHelper::SetSceneName( std::string name )
 {
    m_SceneName = name ;
 }
 
-void CreateMRMLScene::SetInputs( std::vector< InputClass* > arg )
+void CreateMRMLSceneHelper::SetInputs( std::vector< MRMLNodeHelper* > arg )
 {
    m_Arguments = arg ;
 }
 
-int CreateMRMLScene::Write()
+int CreateMRMLSceneHelper::Write()
 {
   if( CheckDoublons( ) )
   {
@@ -47,10 +47,10 @@ int CreateMRMLScene::Write()
    }
    else if( !m_Arguments[ i ]->GetType().compare( "Model" ) )
    {
-      ModelClass *model= dynamic_cast< ModelClass*>( m_Arguments[ i ] ) ;
+      MRMLModelHelper *model= dynamic_cast< MRMLModelHelper*>( m_Arguments[ i ] ) ;
       if( !model )
       {
-         std::cerr << "Problem dynamic casting ModelClass: This should never happen!!!!" << std::endl ;
+         std::cerr << "Problem dynamic casting MRMLModelHelper: This should never happen!!!!" << std::endl ;
          return 1 ;
       }
       if( AddModel( model ) )
@@ -60,10 +60,10 @@ int CreateMRMLScene::Write()
    }
    else if( !m_Arguments[ i ]->GetType().compare( "Volume" ) )
    {
-      VolumeClass *volume = dynamic_cast< VolumeClass*>( m_Arguments[ i ] ) ;
+      MRMLVolumeHelper *volume = dynamic_cast< MRMLVolumeHelper*>( m_Arguments[ i ] ) ;
       if( !volume )
       {
-         std::cerr << "Problem dynamic casting VolumeClass: This should never happen!!!!" << std::endl ;
+         std::cerr << "Problem dynamic casting MRMLVolumeHelper: This should never happen!!!!" << std::endl ;
          return 1 ;
       }
       if( AddVolume( volume ) )
@@ -73,10 +73,10 @@ int CreateMRMLScene::Write()
    }
    else if( !m_Arguments[ i ]->GetType().compare( "FiducialList" ) )
    {
-      FiducialClass *fiducial = dynamic_cast< FiducialClass*>( m_Arguments[ i ] ) ;
+      MRMLFiducialHelper *fiducial = dynamic_cast< MRMLFiducialHelper*>( m_Arguments[ i ] ) ;
       if( !fiducial )
       {
-         std::cerr << "Problem dynamic casting FiducialClass: This should never happen!!!!" << std::endl ;
+         std::cerr << "Problem dynamic casting MRMLFiducialHelper: This should never happen!!!!" << std::endl ;
          return 1 ;
       }
       if( AddFiducial( fiducial ) )
@@ -96,7 +96,7 @@ int CreateMRMLScene::Write()
 }
 
 //Check that each node name is unique
-int CreateMRMLScene::CheckDoublons()
+int CreateMRMLSceneHelper::CheckDoublons()
 {
    for( unsigned int i = 0 ; i < m_Arguments.size() - 1 ; i++ )
    {
@@ -115,7 +115,7 @@ int CreateMRMLScene::CheckDoublons()
 }
 
 
-int CreateMRMLScene::AddFiducial( FiducialClass *fiducial )
+int CreateMRMLSceneHelper::AddFiducial( MRMLFiducialHelper *fiducial )
 {
    bool output = 0 ;
    if( fiducial->GetId().empty() )
@@ -147,7 +147,7 @@ int CreateMRMLScene::AddFiducial( FiducialClass *fiducial )
    return output ;
 }
 
-int CreateMRMLScene::AddVolume( VolumeClass *volume )
+int CreateMRMLSceneHelper::AddVolume( MRMLVolumeHelper *volume )
 {
    vtkMRMLStorageNode *snode ;
    vtkMRMLScalarVolumeDisplayNode* dnode ;
@@ -189,7 +189,7 @@ int CreateMRMLScene::AddVolume( VolumeClass *volume )
    return AddColorable( volume , dnode , snode , inode ) ;
 }
 
-int CreateMRMLScene::AddModel( ModelClass *model )
+int CreateMRMLSceneHelper::AddModel( MRMLModelHelper *model )
 {
    vtkMRMLModelStorageNode *snode = vtkMRMLModelStorageNode::New() ;
    vtkMRMLModelDisplayNode *dnode = vtkMRMLModelDisplayNode::New() ;
@@ -197,7 +197,7 @@ int CreateMRMLScene::AddModel( ModelClass *model )
    return AddColorable( model , dnode , snode , inode ) ;
 }
 
-int CreateMRMLScene::AddColorable( ColorableClass* colorable ,
+int CreateMRMLSceneHelper::AddColorable( MRMLColorableHelper* colorable ,
                   vtkMRMLDisplayNode* dnode ,
                   vtkMRMLStorageNode* snode ,
                   vtkMRMLDisplayableNode* inode
@@ -249,7 +249,7 @@ int CreateMRMLScene::AddColorable( ColorableClass* colorable ,
    return output ;
 }
 
-int CreateMRMLScene::AddTransform( InputClass *input )
+int CreateMRMLSceneHelper::AddTransform( MRMLNodeHelper *input )
 {
    int output = 0 ;
    vtkMRMLTransformStorageNode* snode = vtkMRMLTransformStorageNode::New() ;
@@ -275,7 +275,7 @@ int CreateMRMLScene::AddTransform( InputClass *input )
    return  output ;
 }
 
-int CreateMRMLScene::SetParentNode( vtkMRMLTransformableNode *child , const char* parentName )
+int CreateMRMLSceneHelper::SetParentNode( vtkMRMLTransformableNode *child , const char* parentName )
 {
    if( !strcmp( parentName , "" ) )
    {

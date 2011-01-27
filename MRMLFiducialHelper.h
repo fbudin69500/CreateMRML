@@ -1,14 +1,14 @@
-#ifndef _FiducialClass_h
-#define _FiducialClass_h
+#ifndef _MRMLFiducialHelper_h
+#define _MRMLFiducialHelper_h
 
-#include "ColorableClass.h"
+#include "MRMLColorableHelper.h"
 #include <vector>
 
-class FiducialClass : public ColorableClass
+class MRMLFiducialHelper : public MRMLColorableHelper
 {
 public:
 
-  FiducialClass();
+  MRMLFiducialHelper();
   std::string GetType() ;
   void Print() ;
   void SetId( std::string ) ;

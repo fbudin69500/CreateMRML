@@ -1,20 +1,20 @@
-#ifndef _VolumeClass_h
-#define _VolumeClass_h
+#ifndef _MRMLVolumeHelper_h
+#define _MRMLVolumeHelper_h
 
-#include "ColorableClass.h"
+#include "MRMLColorableHelper.h"
 
 
-class VolumeClass : public ColorableClass
+class MRMLVolumeHelper : public MRMLColorableHelper
 {
    public:
-      VolumeClass()
+      MRMLVolumeHelper()
       {
          m_VolumeType = "scalar" ;
          m_LabelMap = false ;
       }
       void Print()
       {
-         ColorableClass::Print() ;
+         MRMLColorableHelper::Print() ;
          std::cout << "Image Type: " << m_VolumeType << std::endl ;
       }
       void LabelMap( bool label )

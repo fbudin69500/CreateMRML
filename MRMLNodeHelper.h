@@ -1,5 +1,5 @@
-#ifndef _InputClass_h
-#define _InputClass_h
+#ifndef _MRMLNodeHelper_h
+#define _MRMLNodeHelper_h
 
 #include <string>
 
@@ -13,7 +13,7 @@ else\
   error = 1 ;\
 }\
 
-class InputClass
+class MRMLNodeHelper
 {
    public:
       std::string GetFileName()
@@ -48,7 +48,7 @@ class InputClass
          std::cout << "ParentName: " << m_ParentName << std::endl ;
          std::cout << "NodeName: " << m_NodeName << std::endl ;
       }
-      virtual ~InputClass() {}
+      virtual ~MRMLNodeHelper() {}
    protected:
       std::string m_FileName ;
       std::string m_ParentName ;

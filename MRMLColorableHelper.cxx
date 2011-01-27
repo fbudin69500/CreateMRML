@@ -1,6 +1,6 @@
-#include "ColorableClass.h"
+#include "MRMLColorableHelper.h"
 
-ColorableClass::ColorableClass()
+MRMLColorableHelper::MRMLColorableHelper()
 {
    colorNode = vtkMRMLColorTableNode::New() ;
    colorNode->SetTypeToGrey() ;
@@ -10,12 +10,12 @@ ColorableClass::ColorableClass()
    m_B = .5 ;
 }
 
-ColorableClass::~ColorableClass()
+MRMLColorableHelper::~MRMLColorableHelper()
 {
    colorNode->Delete() ;
 }
 
-int ColorableClass::SetOpacity( double value )
+int MRMLColorableHelper::SetOpacity( double value )
 {
    int error ;
    CORRECTVALUEMACRO( value , error ) ;
@@ -27,12 +27,12 @@ int ColorableClass::SetOpacity( double value )
    return 0 ;
 }
 
-float ColorableClass::GetOpacity()
+float MRMLColorableHelper::GetOpacity()
 {
    return m_Opacity ;
 }
 
-int ColorableClass::SetRGB( double R , double G , double B )
+int MRMLColorableHelper::SetRGB( double R , double G , double B )
 {
    int error1 , error2 , error3 ;
    CORRECTVALUEMACRO( R , error1 ) ;
@@ -49,34 +49,34 @@ int ColorableClass::SetRGB( double R , double G , double B )
 }
 
 
-double ColorableClass::GetR()
+double MRMLColorableHelper::GetR()
 {
    return m_R ;
 }
 
-double ColorableClass::GetG()
+double MRMLColorableHelper::GetG()
 {
    return m_G ;
 }
 
 
-double ColorableClass::GetB()
+double MRMLColorableHelper::GetB()
 {
    return m_B ;
 }
 
-void ColorableClass::Print()
+void MRMLColorableHelper::Print()
 {
-   InputClass::Print() ;
+   MRMLNodeHelper::Print() ;
    std::cout << "Color: " << colorNode->GetTypeAsIDString() << std::endl ;
 }
 
-std::string ColorableClass::GetColor()
+std::string MRMLColorableHelper::GetColor()
 {
    return colorNode->GetTypeAsIDString() ;
 }
 
-void ColorableClass::SetColor( int color )
+void MRMLColorableHelper::SetColor( int color )
 {
    if( color >= colorNode->GetFirstType() && color <= colorNode->GetLastType() )
    {
@@ -85,27 +85,27 @@ void ColorableClass::SetColor( int color )
    }
 }
 
-void ColorableClass::SetColorString( std::string color )
+void MRMLColorableHelper::SetColorString( std::string color )
 {
    m_ColorString = color ;
 }
 
-const char* ColorableClass::GetColorString()
+const char* MRMLColorableHelper::GetColorString()
 {
    return m_ColorString.c_str() ;
 }
 
-int ColorableClass::GetFirstColor()
+int MRMLColorableHelper::GetFirstColor()
 {
    return colorNode->GetFirstType() ;
 }
 
-int ColorableClass::GetLastColor()
+int MRMLColorableHelper::GetLastColor()
 {
    return colorNode->GetLastType() ;
 }
 
-void ColorableClass::PrintColors()
+void MRMLColorableHelper::PrintColors()
 {
    std::cout<< "FullRainbow = 0" << std::endl ;
    std::cout<< "Grey = 1" << std::endl ;

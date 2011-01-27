@@ -1,8 +1,8 @@
-#ifndef _ColorableClass_h
-#define _ColorableClass_h
+#ifndef _MRMLColorableHelper_h
+#define _MRMLColorableHelper_h
 
 #include <vtkMRMLColorTableNode.h>
-#include "InputClass.h"
+#include "MRMLNodeHelper.h"
 
 //Copied from vtkMRMLColorTableNode.h
   /// 
@@ -80,11 +80,11 @@
 */
 
 
-class ColorableClass : public InputClass
+class MRMLColorableHelper : public MRMLNodeHelper
 {
    public:
-      ColorableClass() ;
-      ~ColorableClass() ;
+      MRMLColorableHelper() ;
+      ~MRMLColorableHelper() ;
       int SetOpacity( double value ) ;
       float GetOpacity() ;
       int SetRGB( double R , double G , double B ) ;

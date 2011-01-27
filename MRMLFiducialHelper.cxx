@@ -1,6 +1,6 @@
-#include "FiducialClass.h"
+#include "MRMLFiducialHelper.h"
 
-FiducialClass::FiducialClass()
+MRMLFiducialHelper::MRMLFiducialHelper()
 {
   m_X = 0.0 ;
   m_Y = 0.0 ;
@@ -15,24 +15,24 @@ FiducialClass::FiducialClass()
   m_RGB.resize( 3 , .5 ) ;
 }
 
-void  FiducialClass::SetTextScale( double scale )
+void  MRMLFiducialHelper::SetTextScale( double scale )
 {
   m_TextScale = scale ;
 }
 
-std::string FiducialClass::GetType()
+std::string MRMLFiducialHelper::GetType()
 {
   return "FiducialList" ;
 }
 
-double  FiducialClass::GetTextScale()
+double  MRMLFiducialHelper::GetTextScale()
 {
  return m_TextScale ; 
 }
 
-void FiducialClass::Print()
+void MRMLFiducialHelper::Print()
 {
-  ColorableClass::Print() ;
+  MRMLColorableHelper::Print() ;
   std::cout << "Id: "<< m_Id << std::endl ;
   std::cout << "Label: " << m_Label << std::endl ;
   std::cout <<  "Position: " << m_X << " " <<  m_Y << " " << m_Z << std::endl ;
@@ -41,34 +41,34 @@ void FiducialClass::Print()
   std::cout << "Is Visible: " << m_Visible << std::endl ;
 }
 
-void FiducialClass::SetId( std::string id)
+void MRMLFiducialHelper::SetId( std::string id)
 {
   m_Id = id ;
 }
 
-std::string FiducialClass::GetId()
+std::string MRMLFiducialHelper::GetId()
 {
   return m_Id ;
 }
 
-void FiducialClass::SetLabelText( std::string label )
+void MRMLFiducialHelper::SetLabelText( std::string label )
 {
   m_Label = label ;
 }
 
-std::string FiducialClass::GetLabel()
+std::string MRMLFiducialHelper::GetLabel()
 {
   return m_Label ;
 }
 
-void FiducialClass::SetPosition( float x , float y , float z )
+void MRMLFiducialHelper::SetPosition( float x , float y , float z )
 {
   m_X = x ;
   m_Y = y ;
   m_Z = z ;
 }
 
-std::vector< float > FiducialClass::GetPosition()
+std::vector< float > MRMLFiducialHelper::GetPosition()
 {
   std::vector< float > xyz( 3 ) ;
   xyz[ 0 ] = m_X ;
@@ -77,7 +77,7 @@ std::vector< float > FiducialClass::GetPosition()
   return xyz ;
 }
 
-void FiducialClass::SetOrientation( float w , float x , float y , float z )
+void MRMLFiducialHelper::SetOrientation( float w , float x , float y , float z )
 {
   m_oW = z ;
   m_oX = x ;
@@ -85,7 +85,7 @@ void FiducialClass::SetOrientation( float w , float x , float y , float z )
   m_oZ = z ;
 }
 
-std::vector< float > FiducialClass::GetOrientation()
+std::vector< float > MRMLFiducialHelper::GetOrientation()
 {
   std::vector< float > wxyz( 4 ) ;
   wxyz[ 0 ] = m_oW ;
@@ -95,27 +95,27 @@ std::vector< float > FiducialClass::GetOrientation()
   return wxyz ;
 }
 
-void FiducialClass::Selected( bool selected )
+void MRMLFiducialHelper::Selected( bool selected )
 {
   m_Selected = selected ;
 }
 
-bool FiducialClass::IsSelected()
+bool MRMLFiducialHelper::IsSelected()
 {
   return m_Selected ;
 }
 
-void FiducialClass::Visibility( bool visible )
+void MRMLFiducialHelper::Visibility( bool visible )
 {
   m_Visible = visible ;
 }
 
-bool FiducialClass::IsVisible()
+bool MRMLFiducialHelper::IsVisible()
 {
   return m_Visible ;
 }
 
-int FiducialClass::SetSelectedColor( float R , float G , float B )
+int MRMLFiducialHelper::SetSelectedColor( float R , float G , float B )
 {
    int error1 , error2 , error3 ;
    CORRECTVALUEMACRO( R , error1 ) ;
@@ -131,7 +131,7 @@ int FiducialClass::SetSelectedColor( float R , float G , float B )
    return 0 ;
 }
   
-std::vector< float > FiducialClass::GetSelectedColor()
+std::vector< float > MRMLFiducialHelper::GetSelectedColor()
 {
    return m_RGB ;
 }

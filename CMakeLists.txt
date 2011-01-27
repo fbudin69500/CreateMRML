@@ -3,16 +3,16 @@ project (CreateMRML)
 
 set(CreateMRML_SOURCE
  CreateMRML.cxx
- ColorableClass.h
- ColorableClass.cxx
- FiducialClass.cxx
- FiducialClass.h
- InputClass.h
- ModelClass.h
- TransformClass.h
- VolumeClass.h
- CreateMRMLScene.h
- CreateMRMLScene.cxx
+ MRMLColorableHelper.h
+ MRMLColorableHelper.cxx
+ MRMLFiducialHelper.cxx
+ MRMLFiducialHelper.h
+ MRMLNodeHelper.h
+ MRMLModelHelper.h
+ MRMLTransformHelper.h
+ MRMLVolumeHelper.h
+ CreateMRMLSceneHelper.h
+ CreateMRMLSceneHelper.cxx
 )
 
   find_package(Slicer3 REQUIRED)
