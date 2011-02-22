@@ -302,7 +302,7 @@ int CreateMRMLSceneHelper::AddTransform( MRMLTransformHelper *input )
    lnode->SetAndObserveStorageNodeID( snode->GetID() ) ;
    if( !input->GetTransform().empty() )
    {
-     vtkMatrix4x4* matrix = vtkMatrix4x4::New() ;
+/*     vtkMatrix4x4* matrix = vtkMatrix4x4::New() ;
      std::vector< double > vec = input->GetTransform() ;
      for( int i = 0 ; i < 4 ; i++ )
      {
@@ -312,7 +312,31 @@ int CreateMRMLSceneHelper::AddTransform( MRMLTransformHelper *input )
        }
      }
      lnode->ApplyTransform( matrix ) ;
-     matrix->Delete() ;
+     matrix->Delete() ;*/
+     //check if transform file exists
+     std::vector< std::string > vecstring ;
+     std::string path = itksys::SystemTools::GetFilenamePath( m_SceneName ) ;
+     itksys::SystemTools::ConvertToUnixSlashes( path ) ;
+     path += "/" + input->GetFileName() ;
+     //if not, writes transform file
+     if( !itksys::SystemTools::FileExists( path.c_str() , true ) )
+     {
+       std::cout<<path << std::endl;
+       std::vector< double > vec = input->GetTransform() ;
+       typedef itk::AffineTransform< double , 3 > AffineTransformType ;
+       AffineTransformType::Pointer affine = AffineTransformType::New() ;
+       itk::Array< double > array( 12 ) ;
+       for( unsigned int i = 0 ; i < array.size() ; i++ )
+       {
+         array[ i ] = vec[ i ] ;
+       }
+       affine->SetParameters( array ) ;
+       typedef itk::TransformFileWriter WriterType ;
+       WriterType::Pointer transformWriter = WriterType::New() ;
+       transformWriter->SetFileName( path.c_str() ) ;
+       transformWriter->AddTransform( affine ) ;
+       transformWriter->Update() ;
+     }
    }
    if( SetParentNode( lnode ,  input->GetParentName().c_str() ) )
    {

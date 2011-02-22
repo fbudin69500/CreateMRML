@@ -21,6 +21,9 @@
 #include <vtkMRMLColorTableStorageNode.h>
 #include <vtkMRMLFiducialListStorageNode.h>
 #include <vtkMRMLFiducialListNode.h>
+#include <itksys/SystemTools.hxx>
+#include <itkTransformFileWriter.h>
+#include <itkAffineTransform.h>
 
 #include "MRMLModelHelper.h"
 #include "MRMLTransformHelper.h"

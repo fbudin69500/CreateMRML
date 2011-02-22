@@ -71,7 +71,7 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-l: Label map (only for scalar volumes)" << std::endl ;
    std::cout << std::endl ;
    std::cout << "If node is a transform:" << std::endl ;
-   std::cout << "-l: matrix (16 values of the 4x4 transform matrix, ie: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)" << std::endl ;
+   std::cout << "-l: matrix (12 values of the 3x3 transform matrix and vector, ie: 1,0,0,0,1,0,0,0,1,2,3,4)" << std::endl ;
    std::cout << std::endl ;
    std::cout << "If node is a fiducial:" << std::endl ;
    std::cout << "-id fiducialID (compulsory!)" << std::endl ;
@@ -578,7 +578,7 @@ int ReadTransformArgument( bool &transformSet ,
       return 1 ;
    }
    std::vector< double > matrix ;
-   if( ReadVectors( argv , matrix , 16 , "transform" ) )
+   if( ReadVectors( argv , matrix , 12 , "transform" ) )
    {
       return 1 ;
    }

@@ -17,7 +17,7 @@ class MRMLTransformHelper : public MRMLNodeHelper
       }
       int SetTransform( std::vector< double > transform )
       {
-        if( transform.size() != 16 )
+        if( transform.size() != 12 )
         {
           return 1 ;
         }
