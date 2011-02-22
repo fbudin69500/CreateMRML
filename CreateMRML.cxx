@@ -61,6 +61,7 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "If node is a volume, a fiducial or a model:" << std::endl ;
    std::cout << "-op Opacity (default: 1)" << std::endl ;
    std::cout << "-dc r,g,b (default: 0.5,0.5,0.5)" << std::endl ;
+   std::cout << "-as ActiveScalar (default: \"\")" << std::endl ;
    std::cout << std::endl ;
    std::cout << "If node is a volume or a model:" << std::endl ;
    std::cout << "-cc ColorCode (default: 1 [grey])" << std::endl ;
@@ -68,6 +69,9 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "If node is a volume:" << std::endl ;
    std::cout << "-y VolumeType (default: scalar)" << std::endl ;
    std::cout << "-l: Label map (only for scalar volumes)" << std::endl ;
+   std::cout << std::endl ;
+   std::cout << "If node is a transform:" << std::endl ;
+   std::cout << "-l: matrix (16 values of the 4x4 transform matrix, ie: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)" << std::endl ;
    std::cout << std::endl ;
    std::cout << "If node is a fiducial:" << std::endl ;
    std::cout << "-id fiducialID (compulsory!)" << std::endl ;
@@ -186,6 +190,7 @@ int ReadVectors( std::string argv , std::vector< double > &vec , unsigned int si
    vec.resize( size ) ;
    std::vector< std::string > RGBstring( size , "" ) ;
    std::size_t pos ;
+   bool error = false ;
    for( unsigned int i = 0 ; i < size - 1 ; i++ )
    {
       pos = argv.find( "," ) ;
@@ -194,11 +199,17 @@ int ReadVectors( std::string argv , std::vector< double > &vec , unsigned int si
          RGBstring[ i ] = argv.substr( 0 , pos ) ;
          argv = argv.substr( pos + 1 , argv.size() - pos  - 1 ) ;
       }
+      else
+      {
+        error = 1 ;
+        break ;
+      }
    }
    pos = argv.find( "," ) ;
-   if( pos != std::string::npos )
+   if( pos != std::string::npos || error )
    {
       std::cerr << "Error: Their should be only "<< size <<" values given for "<< text << std::endl ;
+      return 1 ;
    }
    RGBstring[ size - 1 ] = argv ;
    for( unsigned int i = 0 ; i < size ; i++ )
@@ -319,6 +330,7 @@ int ReadModelSubArguments( int argc ,
    bool colorCodeSet = false ;
    bool colorSet = false ;
    bool opacitySet = false ;
+   bool activeModelSet = false ;
    while( pos < argc - 2 )
    {
       pos++ ;
@@ -340,6 +352,18 @@ int ReadModelSubArguments( int argc ,
             break ;
          }
          pos++ ;
+      }
+      else if( !strcmp( argv[ pos ] , "-as" ) )
+      {
+        if( activeModelSet )
+        {
+          std::cerr << "Error: Multiple active model given for one model" << std::endl ;
+          exit = 1 ;
+          break ;
+        }
+        ptr->SetActiveScalarName( argv[ pos + 1 ] ) ;
+        activeModelSet = true ;
+        pos++ ;
       }
       else if( !strcmp( argv[ pos ] , "-op" ) )
       {
@@ -396,6 +420,7 @@ int ReadFiducialSubArguments( int argc ,
   bool opacitySet = false ;
   bool scaleSet = false ;
   bool selectedColorSet = false ;
+  bool activeModelSet = false ;
   while( pos < argc - 2 )
   {
     pos++ ;
@@ -419,6 +444,18 @@ int ReadFiducialSubArguments( int argc ,
       }
       fiducial->SetId( argv[ pos + 1 ] ) ;
       idSet = true ;
+      pos++ ;
+    }
+    else if( !strcmp( argv[ pos ] , "-as" ) )
+    {
+      if( activeModelSet )
+      {
+        std::cerr << "Error: Multiple active model given for one fiducial" << std::endl ;
+        exit = 1 ;
+        break ;
+      }
+      fiducial->SetActiveScalarName( argv[ pos + 1 ] ) ;
+      activeModelSet = true ;
       pos++ ;
     }
     else if( !strcmp( argv[ pos ] , "-lbl" ) )
@@ -529,6 +566,31 @@ int ReadFiducialSubArguments( int argc ,
   return 0 ;
 }
 
+
+int ReadTransformArgument( bool &transformSet ,
+                       std::string argv ,
+                       MRMLTransformHelper* ptr
+                     )
+{
+   if( transformSet )
+   {
+      std::cerr << "Error: Multiple transforms given for one object" << std::endl ;
+      return 1 ;
+   }
+   std::vector< double > matrix ;
+   if( ReadVectors( argv , matrix , 16 , "transform" ) )
+   {
+      return 1 ;
+   }
+   if( ptr->SetTransform( matrix ) )
+   {
+     return 1 ;
+   }
+   transformSet = true ;
+   return 0 ;
+}
+
+
 int ReadTransformSubArguments( int argc ,
                            const char *argv[] ,
                            int &pos ,
@@ -537,6 +599,7 @@ int ReadTransformSubArguments( int argc ,
 {
    MRMLTransformHelper* ptr = new MRMLTransformHelper ;
    int exit = 0 ;
+   bool transformSet = false ;
    while( pos < argc - 2 )
    {
       pos++ ;
@@ -548,7 +611,16 @@ int ReadTransformSubArguments( int argc ,
       else if( exit < 0 )
       {
         pos++ ;
-         continue ;
+        continue ;
+      }
+      if( !strcmp( argv[ pos ] , "-l" ) )
+      {
+        if( ReadTransformArgument( transformSet , argv[ pos + 1 ] , ptr ) )
+        {
+          exit = 1 ;
+          break ;
+        }
+        pos++ ;
       }
       else
       {
@@ -583,6 +655,7 @@ int ReadVolumeSubArguments( int argc ,
    bool typeSet = false ;
    bool labelSet = false ;
    bool opacitySet = false ;
+   bool activeModelSet = false ;
    int exit = 0 ;
    while( pos < argc - 1 )
    {
@@ -621,6 +694,18 @@ int ReadVolumeSubArguments( int argc ,
             break ;
          }
          pos++ ;
+      }
+      else if( !strcmp( argv[ pos ] , "-as" ) )
+      {
+        if( activeModelSet )
+        {
+          std::cerr << "Error: Multiple active model given for one volume" << std::endl ;
+          exit = 1 ;
+          break ;
+        }
+        ptr->SetActiveScalarName( argv[ pos + 1 ] ) ;
+        activeModelSet = true ;
+        pos++ ;
       }
       else if( !strcmp( argv[ pos ] , "-op" ) )
       {

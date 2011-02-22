@@ -40,7 +40,13 @@ int CreateMRMLSceneHelper::Write()
 {
    if( !m_Arguments[ i ]->GetType().compare( "Transform" ) )
    {
-      if( AddTransform( m_Arguments[ i ] ) )
+      MRMLTransformHelper *transform= dynamic_cast< MRMLTransformHelper*>( m_Arguments[ i ] ) ;
+      if( !transform )
+      {
+         std::cerr << "Problem dynamic casting MRMLTransformHelper: This should never happen!!!!" << std::endl ;
+         return 1 ;
+      }
+      if( AddTransform( transform ) )
       {
          return 1 ;
       }
@@ -123,6 +129,10 @@ int CreateMRMLSceneHelper::AddFiducial( MRMLFiducialHelper *fiducial )
       return 1 ;
    }
    vtkMRMLFiducialListNode *inode = vtkMRMLFiducialListNode::New() ;
+   if( !fiducial->GetNodeName().empty() )
+   {      
+      inode->SetName( fiducial->GetNodeName().c_str() ) ;
+   }
    m_Scene->AddNode( inode ) ;
    std::vector< float > xyz = fiducial->GetPosition() ;
    inode->AddFiducialWithLabelXYZSelectedVisibility( fiducial->GetLabel().c_str() ,
@@ -197,6 +207,29 @@ int CreateMRMLSceneHelper::AddModel( MRMLModelHelper *model )
    return AddColorable( model , dnode , snode , inode ) ;
 }
 
+std::string
+CreateMRMLSceneHelper::RemoveExtension( std::string input )
+{
+  std::string output ;
+  if( input.compare( "" ) )
+  {
+    output = input ;
+    //remove folder
+    std::size_t pos = output.find_last_of( "/\\" ) ;
+    if( pos != std::string::npos )
+    {
+      output = output.substr( pos + 1 ) ;
+    }
+    //remove extension
+    pos = output.find_last_of( "." ) ;
+    if( pos != std::string::npos )
+    {
+      output = output.substr( 0 , pos ) ;
+    }
+  }
+return output ;
+}
+
 int CreateMRMLSceneHelper::AddColorable( MRMLColorableHelper* colorable ,
                   vtkMRMLDisplayNode* dnode ,
                   vtkMRMLStorageNode* snode ,
@@ -212,6 +245,7 @@ int CreateMRMLSceneHelper::AddColorable( MRMLColorableHelper* colorable ,
    colorRGB[ 1 ] = colorable->GetG() ;
    colorRGB[ 2 ] = colorable->GetB() ;
    dnode->SetColor( colorRGB ) ;
+   dnode->SetScalarVisibility( 1 ) ;
    if( !strcmp( colorable->GetColorString() , "" ) )
    {
       dnode->SetAndObserveColorNodeID( colorable->GetColor() ) ;
@@ -223,6 +257,7 @@ int CreateMRMLSceneHelper::AddColorable( MRMLColorableHelper* colorable ,
       vtkMRMLColorTableNode *ctnode = vtkMRMLColorTableNode::New() ;
       m_Scene->AddNode( ctsnode ) ;
       m_Scene->AddNode( ctnode ) ;
+      ctnode->SetName( RemoveExtension( colorable->GetColorString() ).c_str() ) ;
       ctnode->SetAndObserveStorageNodeID( ctsnode->GetID() ) ;
       dnode->SetAndObserveColorNodeID( ctnode->GetID() ) ;
       ctnode->Delete() ;
@@ -232,6 +267,10 @@ int CreateMRMLSceneHelper::AddColorable( MRMLColorableHelper* colorable ,
    if( !colorable->GetNodeName().empty() )
    {
       inode->SetName( colorable->GetNodeName().c_str() ) ;
+   }
+   if( !colorable->GetActiveScalarName().empty() )
+   {
+      dnode->SetActiveScalarName( colorable->GetActiveScalarName().c_str() ) ;
    }
    inode->SetAndObserveDisplayNodeID( dnode->GetID() ) ;
    inode->SetAndObserveStorageNodeID( snode->GetID() ) ;
@@ -249,19 +288,32 @@ int CreateMRMLSceneHelper::AddColorable( MRMLColorableHelper* colorable ,
    return output ;
 }
 
-int CreateMRMLSceneHelper::AddTransform( MRMLNodeHelper *input )
+int CreateMRMLSceneHelper::AddTransform( MRMLTransformHelper *input )
 {
    int output = 0 ;
    vtkMRMLTransformStorageNode* snode = vtkMRMLTransformStorageNode::New() ;
    snode->SetFileName( input->GetFileName().c_str() ) ;
    m_Scene->AddNode( snode ) ;
-
    vtkMRMLLinearTransformNode* lnode = vtkMRMLLinearTransformNode::New() ;
    if( !input->GetNodeName().empty() )
    {
       lnode->SetName( input->GetNodeName().c_str() ) ;
    }
    lnode->SetAndObserveStorageNodeID( snode->GetID() ) ;
+   if( !input->GetTransform().empty() )
+   {
+     vtkMatrix4x4* matrix = vtkMatrix4x4::New() ;
+     std::vector< double > vec = input->GetTransform() ;
+     for( int i = 0 ; i < 4 ; i++ )
+     {
+       for( int j = 0 ; j < 4 ; j++ )
+       {
+         matrix->SetElement( i , j , vec[ i*4 + j ] ) ;
+       }
+     }
+     lnode->ApplyTransform( matrix ) ;
+     matrix->Delete() ;
+   }
    if( SetParentNode( lnode ,  input->GetParentName().c_str() ) )
    {
       output = 1 ;

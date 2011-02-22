@@ -42,10 +42,11 @@ class CreateMRMLSceneHelper
       std::string m_SceneName ;
       std::vector< MRMLNodeHelper* > m_Arguments ;
       vtkMRMLScene* m_Scene ;
+      std::string RemoveExtension( std::string input ) ;
       int CheckDoublons( ) ;
       int AddVolume( MRMLVolumeHelper *volume ) ;
       int SetParentNode( vtkMRMLTransformableNode *child , const char* parentName ) ;
-      int AddTransform( MRMLNodeHelper *input ) ;
+      int AddTransform( MRMLTransformHelper *input ) ;
       int AddColorable( MRMLColorableHelper* colorable ,
                         vtkMRMLDisplayNode* dnode ,
                         vtkMRMLStorageNode* snode ,

@@ -99,9 +99,12 @@ class MRMLColorableHelper : public MRMLNodeHelper
       int GetFirstColor() ;
       int GetLastColor() ;
       void PrintColors() ;
+      void SetActiveScalarName( std::string activeScalar ) ;
+      std::string GetActiveScalarName( ) ;
    private:
       vtkMRMLColorTableNode *colorNode ;
       std::string m_ColorString ;
+      std::string m_ActiveScalar ;
       double m_Opacity ;
       double m_R ;
       double m_G ;

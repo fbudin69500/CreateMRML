@@ -27,6 +27,17 @@ int MRMLColorableHelper::SetOpacity( double value )
    return 0 ;
 }
 
+
+void MRMLColorableHelper::SetActiveScalarName( std::string activeScalar )
+{
+  m_ActiveScalar = activeScalar ;
+}
+
+std::string MRMLColorableHelper::GetActiveScalarName( )
+{
+  return m_ActiveScalar ;
+}
+
 float MRMLColorableHelper::GetOpacity()
 {
    return m_Opacity ;
