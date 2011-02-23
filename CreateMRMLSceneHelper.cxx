@@ -140,6 +140,7 @@ int CreateMRMLSceneHelper::CheckDoublons()
       {
           if( !m_Arguments[ i ]->GetNodeName().compare( m_Arguments[ j ]->GetNodeName() ) )
           {
+             std::cerr << "This node's name appears multiple times: "<< m_Arguments[ i ]->GetNodeName() << std::endl ;
              return 1 ;
           }
       }
@@ -155,6 +156,7 @@ int CreateMRMLSceneHelper::CheckDoublonsWithScene()
     {
       if( !m_Arguments[ j ]->GetNodeName().compare( m_Scene->GetNthNode( i )->GetName() ) )
       {
+        std::cerr << "This node's name appears multiple times: "<< m_Arguments[ i ]->GetNodeName() << std::endl ;
         return 1 ;
       }
     }
