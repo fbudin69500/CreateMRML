@@ -10,9 +10,14 @@ CreateMRMLSceneHelper::~CreateMRMLSceneHelper()
    m_Scene->Delete() ;
 }
 
-void CreateMRMLSceneHelper::SetSceneName( std::string name )
+void CreateMRMLSceneHelper::SetOutputSceneName( std::string name )
 {
    m_SceneName = name ;
+}
+
+void CreateMRMLSceneHelper::SetInputSceneName( std::string name )
+{
+  m_InputSceneName = name ;
 }
 
 void CreateMRMLSceneHelper::SetInputs( std::vector< MRMLNodeHelper* > arg )
@@ -25,15 +30,22 @@ int CreateMRMLSceneHelper::Write()
   if( CheckDoublons( ) )
   {
     std::cerr << "Error: Some node names appear multiple times. Please verify your input information" << std::endl ;
-    for( unsigned int i = 0 ; i < m_Arguments.size() ; i++ )
+    PrintArguments() ;
+    return 1 ;
+  }
+  if( !m_InputSceneName.empty() )
+  {
+    m_Scene->SetURL( m_InputSceneName.c_str() ) ;
+    m_Scene->Import() ;
+    if( CheckDoublonsWithScene() )
     {
-      if( m_Arguments[ i ]->GetNodeName().empty() )
-      {
-        continue ;
-      }
-      std::cerr << m_Arguments[ i ]->GetFileName() << " : " << m_Arguments[ i ]->GetNodeName() << std::endl ;
-   }
-   return 1 ;
+      std::cerr << "Error: Some node names appear inserted are already present in the given scene. Please verify your input information" << std::endl ;
+      std::cerr << "Inserted nodes:" << std::endl ;
+      PrintArguments() ;
+      std::cerr << "Existing nodes in scene:" << std::endl ;
+      PrintSceneNodes() ;
+      return 1 ;
+    }
   }
    //Create scene
    for( unsigned int i = 0 ; i < m_Arguments.size() ; i++ )
@@ -101,6 +113,24 @@ int CreateMRMLSceneHelper::Write()
   return 0 ;
 }
 
+
+void CreateMRMLSceneHelper::PrintArguments()
+{
+  for( unsigned int i = 0 ; i < m_Arguments.size() ; i++ )
+  {
+    std::cerr << m_Arguments[ i ]->GetFileName() << " : " << m_Arguments[ i ]->GetNodeName() << std::endl ;
+  }
+}
+
+void CreateMRMLSceneHelper::PrintSceneNodes()
+{
+  for( int i = 0 ; i < m_Scene->GetNumberOfNodes() ; i++ )
+  {
+    std::cerr << m_Scene->GetNthNode( i )->GetName() << std::endl ;
+  }
+}
+
+
 //Check that each node name is unique
 int CreateMRMLSceneHelper::CheckDoublons()
 {
@@ -108,16 +138,28 @@ int CreateMRMLSceneHelper::CheckDoublons()
    {
       for( unsigned int j = i + 1 ; j < m_Arguments.size() ; j++ )
       {
-         if( !m_Arguments[ i ]->GetNodeName().empty() )
-         {
-            if( !m_Arguments[ i ]->GetNodeName().compare( m_Arguments[ j ]->GetNodeName() ) )
-            {
-               return 1 ;
-            }
-         }
+          if( !m_Arguments[ i ]->GetNodeName().compare( m_Arguments[ j ]->GetNodeName() ) )
+          {
+             return 1 ;
+          }
       }
    }
    return 0 ;
+}
+
+int CreateMRMLSceneHelper::CheckDoublonsWithScene()
+{
+  for( int i = 0 ; i < m_Scene->GetNumberOfNodes() ; i++ )
+  {
+    for( unsigned int j = 0 ; j < m_Arguments.size() ; j++ )
+    {
+      if( !m_Arguments[ j ]->GetNodeName().compare( m_Scene->GetNthNode( i )->GetName() ) )
+      {
+        return 1 ;
+      }
+    }
+  }
+  return 0 ;
 }
 
 
@@ -321,7 +363,6 @@ int CreateMRMLSceneHelper::AddTransform( MRMLTransformHelper *input )
      //if not, writes transform file
      if( !itksys::SystemTools::FileExists( path.c_str() , true ) )
      {
-       std::cout<<path << std::endl;
        std::vector< double > vec = input->GetTransform() ;
        typedef itk::AffineTransform< double , 3 > AffineTransformType ;
        AffineTransformType::Pointer affine = AffineTransformType::New() ;

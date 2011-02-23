@@ -41,7 +41,7 @@ If error: prints exec_name -h to print help
 void PrintHelp( const char* arg0 , bool extended )
 {
    std::cout << "usage: " << std::endl ;
-   std::cout << arg0 << " SceneFileName [-t/-v/-m/-q][-f/-p/-n][-dc/-op][-cc][-y][-h]" << std::endl ;
+   std::cout << arg0 << " SceneFileName [-t/-v/-m/-q/-s][-f/-p/-n][-dc/-op][-cc][-y][-h]" << std::endl ;
    if( !extended )
    {
       return ;
@@ -51,6 +51,7 @@ void PrintHelp( const char* arg0 , bool extended )
    std::cout << "-v: Adds a volume" << std::endl ;
    std::cout << "-m: Adds a model" << std::endl ;
    std::cout << "-q: Adds a fiducial" << std::endl ;
+   std::cout << "-s filename: Adds an input scene" << std::endl ;
    std::cout << "-h: Prints help" << std::endl ;
    std::cout << std::endl ;
    std::cout << "For each object added to the scene:" << std::endl ;
@@ -131,6 +132,7 @@ int ReadCommonSubArguments( std::string arg , std::string value , MRMLNodeHelper
          || !arg.compare( "-m" )
          || !arg.compare( "-q" )
          || !arg.compare( "-h" )
+         || !arg.compare( "-s" )
           )
    {
       return 2 ;
@@ -762,7 +764,11 @@ int ReadVolumeSubArguments( int argc ,
    return 0 ;
 }
 
-int ReadArguments( int argc , const char *argv[] , std::vector< MRMLNodeHelper* > &arguments )
+int ReadArguments( int argc ,
+                   const char *argv[] ,
+                   std::vector< MRMLNodeHelper* > &arguments ,
+                   std::string &input
+                 )
 {
    if( argc < 2 )
    {
@@ -778,6 +784,7 @@ int ReadArguments( int argc , const char *argv[] , std::vector< MRMLNodeHelper* 
     || !strcmp( argv[ 1 ] , "-t" )
     || !strcmp( argv[ 1 ] , "-m" )
     || !strcmp( argv[ 1 ] , "-q" )
+    || !strcmp( argv[ 1 ] , "-s" )
      )
    {
       std::cerr << "First argument must be the scene file name [or -h]" << std::endl ;
@@ -822,6 +829,16 @@ int ReadArguments( int argc , const char *argv[] , std::vector< MRMLNodeHelper* 
       {
          PrintHelp( argv[ 0 ] , 1 ) ;
          return -1 ;
+      }
+      else if( !strcmp( argv[ i ] , "-s" ) )
+      {
+        if( i +1 >= argc )
+        {
+          PrintHelp( argv[ 0 ] , 1 ) ;
+          return -1 ;
+        }
+        input = argv[ i + 1 ] ; 
+        i++ ;
       }
       else
       {
@@ -868,8 +885,9 @@ void DeleteArguments( std::vector< MRMLNodeHelper* > arguments )
 int main( int argc , const char* argv[] )
 {
   int output ;
+  std::string input ;
   std::vector< MRMLNodeHelper* > arguments ;
-  output = ReadArguments( argc , argv , arguments ) ;
+  output = ReadArguments( argc , argv , arguments , input ) ;
   if( output > 0 )
   {
     DeleteArguments( arguments ) ;
@@ -883,7 +901,8 @@ int main( int argc , const char* argv[] )
   output = EXIT_SUCCESS ;
   CheckNodeName( arguments ) ;
   CreateMRMLSceneHelper MRMLCreator ;
-  MRMLCreator.SetSceneName( argv[ 1 ] ) ;
+  MRMLCreator.SetOutputSceneName( argv[ 1 ] ) ;
+  MRMLCreator.SetInputSceneName( input ) ;
   MRMLCreator.SetInputs( arguments ) ;
   output = MRMLCreator.Write() ;
   DeleteArguments( arguments ) ;
