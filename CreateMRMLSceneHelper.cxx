@@ -118,6 +118,10 @@ void CreateMRMLSceneHelper::PrintArguments()
 {
   for( unsigned int i = 0 ; i < m_Arguments.size() ; i++ )
   {
+    if( m_Arguments[ i ]->GetNodeName().empty() )
+    {
+      continue ;
+    }
     std::cerr << m_Arguments[ i ]->GetFileName() << " : " << m_Arguments[ i ]->GetNodeName() << std::endl ;
   }
 }
@@ -138,11 +142,14 @@ int CreateMRMLSceneHelper::CheckDoublons()
    {
       for( unsigned int j = i + 1 ; j < m_Arguments.size() ; j++ )
       {
-          if( !m_Arguments[ i ]->GetNodeName().compare( m_Arguments[ j ]->GetNodeName() ) )
-          {
-             std::cerr << "This node's name appears multiple times: "<< m_Arguments[ i ]->GetNodeName() << std::endl ;
-             return 1 ;
-          }
+         if( !m_Arguments[ i ]->GetNodeName().empty() )
+         {
+           if( !m_Arguments[ i ]->GetNodeName().compare( m_Arguments[ j ]->GetNodeName() ) )
+           {
+              std::cerr << "This node's name appears multiple times: "<< m_Arguments[ i ]->GetNodeName() << std::endl ;
+              return 1 ;
+           }
+         }
       }
    }
    return 0 ;
@@ -154,10 +161,13 @@ int CreateMRMLSceneHelper::CheckDoublonsWithScene()
   {
     for( unsigned int j = 0 ; j < m_Arguments.size() ; j++ )
     {
-      if( !m_Arguments[ j ]->GetNodeName().compare( m_Scene->GetNthNode( i )->GetName() ) )
+      if( !m_Arguments[ j ]->GetNodeName().empty() )
       {
-        std::cerr << "This node's name appears multiple times: "<< m_Arguments[ i ]->GetNodeName() << std::endl ;
-        return 1 ;
+        if( !m_Arguments[ j ]->GetNodeName().compare( m_Scene->GetNthNode( i )->GetName() ) )
+        {
+          std::cerr << "This node's name appears multiple times: "<< m_Arguments[ i ]->GetNodeName() << std::endl ;
+          return 1 ;
+        }
       }
     }
   }
