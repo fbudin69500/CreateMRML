@@ -6,6 +6,7 @@
 #include <vtkMRMLTransformStorageNode.h>
 #include <vtkMRMLScalarVolumeNode.h>
 #include <vtkMRMLVolumeArchetypeStorageNode.h>
+#include <vtkMRMLLabelMapVolumeDisplayNode.h>
 #include <vtkMRMLScalarVolumeDisplayNode.h>
 #include <vtkMRMLDiffusionWeightedVolumeDisplayNode.h>
 #include <vtkMRMLVectorVolumeNode.h>

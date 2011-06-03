@@ -214,16 +214,20 @@ int CreateMRMLSceneHelper::AddFiducial( MRMLFiducialHelper *fiducial )
 int CreateMRMLSceneHelper::AddVolume( MRMLVolumeHelper *volume )
 {
    vtkMRMLStorageNode *snode ;
-   vtkMRMLScalarVolumeDisplayNode* dnode ;
+   vtkMRMLVolumeDisplayNode* dnode ;
    vtkMRMLVolumeNode *inode ;
    if( !volume->GetVolumeType().compare( "scalar" ) )
    {
       snode = vtkMRMLVolumeArchetypeStorageNode::New() ;
-      dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
       vtkMRMLScalarVolumeNode *vnode = vtkMRMLScalarVolumeNode::New() ;
       if( volume->IsLabelMap() )
       {
+         dnode = vtkMRMLLabelMapVolumeDisplayNode::New() ;
          vnode->LabelMapOn() ;
+      }
+      else
+      {
+         dnode = vtkMRMLScalarVolumeDisplayNode::New() ;
       }
       inode = vnode ;
    }
