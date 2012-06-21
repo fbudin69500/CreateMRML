@@ -17,7 +17,7 @@ set(CreateMRML_SOURCE
  MagicParser.cxx
 )
 
-  find_package(Slicer3 REQUIRED)
+  find_package(Slicer3 REQUIRED ${Slicer3_DIR})
   include(${Slicer3_USE_FILE})
 
 add_executable(CreateMRML ${CreateMRML_SOURCE})
