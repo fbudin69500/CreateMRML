@@ -17,8 +17,18 @@ set(CreateMRML_SOURCE
  MagicParser.cxx
 )
 
-find_package(Slicer3 REQUIRED PATHS ${Slicer3_DIR})
-include(${Slicer3_USE_FILE})
+find_package(Slicer3 REQUIRED)
+
+include_directories(BEFORE 
+  ${Slicer3_Libs_INCLUDE_DIRS} 
+  ${Slicer3_Base_INCLUDE_DIRS}
+  )
+
+# Add link directories needed to use Slicer3.
+link_directories(
+  ${Slicer3_Libs_LIBRARY_DIRS}
+  ${Slicer3_Base_LIBRARY_DIRS}
+  )
 
 find_package(ITK REQUIRED)
 if(ITK_FOUND)
@@ -30,16 +40,8 @@ if(VTK_FOUND)
   include(${VTK_USE_FILE})
 endif()
 
-set( t_generateclp_DIR ${GenerateCLP_DIR} )
-set( GenerateCLP_DIR ${t_generateclp_DIR} CACHE PATH "" FORCE )
-
-set( t_tclap_DIR ${TCLAP_DIR} )
-set( TCLAP_DIR ${t_tclap_DIR} CACHE PATH "" FORCE )
-
-
-set( t_module_DIR ${ModuleDescriptionParser_DIR} )
-set( ModuleDescriptionParser_DIR ${t_module_DIR} CACHE PATH "" FORCE )
-
+link_directories( ${Slicer3_HOME}/lib/MRMLCLI )
+mark_as_advanced( Slicer3_HOME )
 
 add_executable(CreateMRML ${CreateMRML_SOURCE})
 target_link_libraries(CreateMRML ${Slicer3_Libs_LIBRARIES} ${ITK_LIBRARIES} vtkCommon)
