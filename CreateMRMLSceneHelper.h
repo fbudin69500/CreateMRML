@@ -1,6 +1,7 @@
 #ifndef _CreateMRMLSceneHelper_h
 #define _CreateMRMLSceneHelper_h
 
+#include <vtkNew.h>
 #include <vtkMRMLScene.h>
 #include <vtkMRMLLinearTransformNode.h>
 #include <vtkMRMLTransformStorageNode.h>
@@ -16,6 +17,7 @@
 #include <vtkMRMLDiffusionWeightedVolumeNode.h>
 #include <vtkMRMLNRRDStorageNode.h>
 #include <vtkMRMLModelStorageNode.h>
+#include "vtkMRMLModelDisplayNode.h"
 #include <vtkMRMLModelNode.h>
 #include <vtkMRMLDisplayNode.h>
 #include <vtkMRMLColorTableNode.h>

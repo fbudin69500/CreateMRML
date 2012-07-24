@@ -257,11 +257,13 @@ int CreateMRMLSceneHelper::AddVolume( MRMLVolumeHelper *volume )
    return AddColorable( volume , dnode , snode , inode ) ;
 }
 
+
 int CreateMRMLSceneHelper::AddModel( MRMLModelHelper *model )
 {
    vtkMRMLModelStorageNode *snode = vtkMRMLModelStorageNode::New() ;
    vtkMRMLModelDisplayNode *dnode = vtkMRMLModelDisplayNode::New() ;
    vtkMRMLModelNode *inode = vtkMRMLModelNode::New() ;
+
    return AddColorable( model , dnode , snode , inode ) ;
 }
 
